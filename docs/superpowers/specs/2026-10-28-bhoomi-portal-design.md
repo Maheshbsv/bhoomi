@@ -46,7 +46,7 @@ Year fields accept 1900 to the current year, and `yearFrom ≤ yearTo`. Survey a
 
 ## 5. Status lifecycle (canonical)
 
-Twelve statuses. Both source files were missing some, and plan.txt renamed one.
+Eleven statuses. Both source files were missing some, and plan.txt renamed one.
 
 ```
 SUBMITTED ─► UNDER_REVIEW ─┬─► ASSIGNED_TO_RUNNER ─► ARCHIVE_SEARCH_IN_PROGRESS ─┬─► DOCUMENT_RETRIEVED ─► QC_WATERMARK_MERGE ─► DELIVERED
@@ -244,7 +244,7 @@ model InternalNote {
 
 | # | Conflict / gap | Resolution |
 |---|---|---|
-| 1 | Status enums differed between the PRD SQL, PRD diagram and plan Prisma | 12 canonical statuses in §5, with an explicit transition table |
+| 1 | Status enums differed between the PRD SQL, PRD diagram and plan Prisma | 11 canonical statuses in §5, with an explicit transition table |
 | 2 | Plan schema dropped PRD fields (matter tag, shipping address, email, pincode, endorsement doc, actor, file size/MIME) | All put back (§7). Added `RequestMessage`, `InternalNote`, `batchId`, `consignmentNo`, `runnerName` |
 | 3 | `surveyNo` required in the database but LRF and RRT have no survey field | Nullable column; zod requires it only for RTC/MR/LND |
 | 4 | `LocationSchema` used district/taluk/hobli IDs against a flat table | Request stores `villageId` only |

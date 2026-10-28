@@ -111,7 +111,7 @@ test('static export emits both locales under out/', () => {
 - Test: `tests/unit/{status,requestNumber,sla,uploads,locations}.test.ts`
 
 **Interfaces:**
-- Produces (types.ts): `ServiceType`, `OrderStatus` (12 values, spec §5), `DeliveryMode`, `DocType` (`CUSTOMER_REFERENCE | OPERATOR_SCAN | FINAL_DELIVERABLE | ENDORSEMENT_CERTIFICATE`), `Role`, and interfaces `Location`, `User`, `ServiceRequest`, `TimelineEntry`, `RequestDocument`, `RequestMessage`, `InternalNote`. Fields mirror the Prisma models in spec §7 (camelCase; dates as ISO strings; `RequestDocument.storageKey` holds the Blob key).
+- Produces (types.ts): `ServiceType`, `OrderStatus` (11 values, spec §5), `DeliveryMode`, `DocType` (`CUSTOMER_REFERENCE | OPERATOR_SCAN | FINAL_DELIVERABLE | ENDORSEMENT_CERTIFICATE`), `Role`, and interfaces `Location`, `User`, `ServiceRequest`, `TimelineEntry`, `RequestDocument`, `RequestMessage`, `InternalNote`. Fields mirror the Prisma models in spec §7 (camelCase; dates as ISO strings; `RequestDocument.storageKey` holds the Blob key).
 - `SERVICE_CATALOG: Record<ServiceType, { short: 'RTC'|'MR'|'LND'|'LRF'|'RRT'; surveyRequired: boolean; typicalDays: [number, number] }>`. Typical days: RTC [5,10], MR [7,14], LND [10,21], LRF [10,21], RRT [14,30] (my call; labelled "typical" in the UI).
 - `TRANSITIONS: Record<OrderStatus, OrderStatus[]>` (spec §5 table, exactly), `canTransition(from, to): boolean`, `operatorNextStatuses(from): OrderStatus[]` (TRANSITIONS minus `CUSTOMER_RESPONDED`), `isTerminal(s): boolean`, `citizenStage(s): 0|1|2|3|4|'closed'`.
 - `formatRequestNumber(service: ServiceType, year: number, seq: number): string`, `normalizeRequestNumber(raw: string): string | null` (trim, uppercase, must match `/^KAR-\d{4}-(RTC|MR|LND|LRF|RRT)-\d{4,}$/`).
