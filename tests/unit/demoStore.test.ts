@@ -262,7 +262,38 @@ describe('flow', () => {
   });
 });
 
+describe('concurrency', () => {
+  it('keeps both documents from concurrent addDocument', async () => {
+    const [r] = await s.createRequests([inputRtc()], uid);
+    const mk = (n: string) => new Blob([n], { type: 'application/pdf' });
+    await Promise.all([
+      s.addDocument(r.id, mk('a'), { fileType: 'OPERATOR_SCAN', fileName: 'a.pdf' }),
+      s.addDocument(r.id, mk('b'), { fileType: 'OPERATOR_SCAN', fileName: 'b.pdf' }),
+    ]);
+    expect((await s.getRequest(r.id))!.documents).toHaveLength(2);
+  });
+
+  it('issues distinct numbers for concurrent createRequests', async () => {
+    const [x, y] = await Promise.all([s.createRequests([inputRtc()], uid), s.createRequests([inputRtc()], uid)]);
+    expect(x[0].requestNumber).not.toBe(y[0].requestNumber);
+    expect((await s.listRequests()).length).toBe(32);
+  });
+
+  it('a rejected mutation does not block the next one', async () => {
+    const [r] = await s.createRequests([inputRtc()], uid);
+    const bad = s.transition(r.id, 'DELIVERED', { actorId: op });
+    const good = s.transition(r.id, 'UNDER_REVIEW', { actorId: op });
+    await expect(bad).rejects.toMatchObject({ code: 'ILLEGAL_TRANSITION' });
+    expect((await good).status).toBe('UNDER_REVIEW');
+  });
+});
+
 describe('fallback', () => {
+  it('can be forced into memory mode', async () => {
+    const mem = await createDemoStore({ now, memory: true });
+    expect(mem.persistent).toBe(false);
+  });
+
   it('uses an in-memory store when indexedDB is unavailable', async () => {
     const saved = globalThis.indexedDB;
     // @ts-expect-error simulate private browsing

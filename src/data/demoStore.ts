@@ -5,7 +5,7 @@ import {
   type RequestDetail,
   type RequestFilter,
 } from './DataStore';
-import { buildSeed, type SeedData } from './seed';
+import type { SeedData } from './seed';
 import { CreateRequestSchema } from '@/domain/schemas';
 import { periodLabel, toServiceMetadata } from '@/domain/schemas';
 import { formatRequestNumber, normalizeRequestNumber } from '@/domain/requestNumber';
@@ -55,8 +55,9 @@ function memoryKv(): KV {
 
 const SEEDED_KEY = 'seeded:v1';
 
-async function openKv(): Promise<{ kv: KV; persistent: boolean }> {
+async function openKv(forceMemory: boolean): Promise<{ kv: KV; persistent: boolean }> {
   try {
+    if (forceMemory) throw new Error('memory forced');
     if (typeof indexedDB === 'undefined') throw new Error('indexedDB unavailable');
     const kv = idbKv(createStore('hale-dakhale', 'kv'));
     await kv.get(SEEDED_KEY); // surfaces an async open() failure
@@ -70,8 +71,8 @@ const nowIso = () => new Date().toISOString();
 const uuid = () => crypto.randomUUID();
 const NEEDS_REPLY_FROM: OrderStatus[] = ['UNDER_REVIEW', 'CUSTOMER_RESPONDED', 'ARCHIVE_SEARCH_IN_PROGRESS'];
 
-export async function createDemoStore(opts: { now?: Date } = {}): Promise<DataStore> {
-  const { kv, persistent } = await openKv();
+export async function createDemoStore(opts: { now?: Date; memory?: boolean } = {}): Promise<DataStore> {
+  const { kv, persistent } = await openKv(opts.memory === true);
 
   const load = async <T,>(name: string): Promise<T[]> => (await kv.get<T[]>(name)) ?? [];
 
@@ -93,9 +94,18 @@ export async function createDemoStore(opts: { now?: Date } = {}): Promise<DataSt
 
   async function ensureSeeded(): Promise<void> {
     if (await kv.get(SEEDED_KEY)) return;
+    const { buildSeed } = await import('./seed'); // lazy: keeps pdf-lib out of the main bundle
     await writeSeed(await buildSeed(opts.now ?? new Date()));
   }
   await ensureSeeded();
+
+  // All mutations run one at a time; a failure reaches its caller but does not wedge the queue.
+  let queue: Promise<unknown> = Promise.resolve();
+  const serial = <T,>(fn: () => Promise<T>): Promise<T> => {
+    const p = queue.then(fn, fn);
+    queue = p.catch(() => {});
+    return p;
+  };
 
   async function findRequest(id: string): Promise<{ all: ServiceRequest[]; req: ServiceRequest }> {
     const all = await load<ServiceRequest>('requests');
@@ -169,15 +179,17 @@ export async function createDemoStore(opts: { now?: Date } = {}): Promise<DataSt
     listLocations: () => load<Location>('locations'),
     listUsers: () => load<User>('users'),
 
-    async findOrCreateUserByPhone(phone10, role = 'CITIZEN') {
-      const phoneNumber = `+91${phone10}`;
-      const users = await load<User>('users');
-      const found = users.find((u) => u.phoneNumber === phoneNumber);
-      if (found) return found;
-      const user: User = { id: uuid(), phoneNumber, role, createdAt: nowIso() };
-      users.push(user);
-      await kv.set('users', users);
-      return user;
+    findOrCreateUserByPhone(phone10, role = 'CITIZEN') {
+      return serial(async () => {
+        const phoneNumber = `+91${phone10}`;
+        const users = await load<User>('users');
+        const found = users.find((u) => u.phoneNumber === phoneNumber);
+        if (found) return found;
+        const user: User = { id: uuid(), phoneNumber, role, createdAt: nowIso() };
+        users.push(user);
+        await kv.set('users', users);
+        return user;
+      });
     },
 
     async listRequests(filter: RequestFilter = {}, now = new Date()) {
@@ -231,155 +243,169 @@ export async function createDemoStore(opts: { now?: Date } = {}): Promise<DataSt
       };
     },
 
-    async createRequests(inputs, userId, files) {
-      const users = await load<User>('users');
-      if (!users.some((u) => u.id === userId)) throw new StoreError('UNKNOWN_USER', `User ${userId} not found`);
-      const locations = await load<Location>('locations');
-      const parsed = inputs.map((input) => {
-        const r = CreateRequestSchema.safeParse(input);
-        if (!r.success) throw new StoreError('VALIDATION', r.error.issues.map((i) => i.message).join('; '));
-        if (!locations.some((l) => l.id === r.data.villageId)) throw new StoreError('UNKNOWN_LOCATION', `Unknown village ${r.data.villageId}`);
-        return r.data;
-      });
-
-      const requests = await load<ServiceRequest>('requests');
-      const created: ServiceRequest[] = [];
-      const year = new Date().getFullYear();
-      const ckey = `counter:${year}`;
-      let counter = (await kv.get<number>(ckey)) ?? 1000;
-
-      for (let i = 0; i < parsed.length; i++) {
-        const p = parsed[i];
-        const at = nowIso();
-        counter += 1;
-        const req: ServiceRequest = {
-          id: uuid(),
-          requestNumber: formatRequestNumber(p.details.serviceType, year, counter),
-          userId,
-          serviceType: p.details.serviceType,
-          status: 'SUBMITTED',
-          locationId: p.villageId,
-          surveyNo: p.details.surveyNo,
-          hissaNo: p.details.hissaNo,
-          periodOrYear: periodLabel(p.details),
-          serviceMetadata: toServiceMetadata(p.details),
-          matterTag: p.matterTag,
-          batchId: p.batchId,
-          deliveryMode: p.delivery.mode,
-          shippingAddress: p.delivery.address,
-          createdAt: at,
-          updatedAt: at,
-        };
-        created.push(req);
-        await pushTo<TimelineEntry>('timeline', {
-          id: uuid(),
-          requestId: req.id,
-          fromStatus: null,
-          toStatus: 'SUBMITTED',
-          note: 'Request submitted',
-          actorId: userId,
-          createdAt: at,
+    createRequests(inputs, userId, files) {
+      return serial(async () => {
+        const users = await load<User>('users');
+        if (!users.some((u) => u.id === userId)) throw new StoreError('UNKNOWN_USER', `User ${userId} not found`);
+        const locations = await load<Location>('locations');
+        const parsed = inputs.map((input) => {
+          const r = CreateRequestSchema.safeParse(input);
+          if (!r.success) throw new StoreError('VALIDATION', r.error.issues.map((i) => i.message).join('; '));
+          if (!locations.some((l) => l.id === r.data.villageId)) throw new StoreError('UNKNOWN_LOCATION', `Unknown village ${r.data.villageId}`);
+          return r.data;
         });
-        for (const f of files?.[i] ?? []) {
-          await newDoc(req.id, f, { fileType: 'CUSTOMER_REFERENCE', fileName: f.name, uploadedById: userId });
+  
+        const requests = await load<ServiceRequest>('requests');
+        const created: ServiceRequest[] = [];
+        const year = new Date().getFullYear();
+        const ckey = `counter:${year}`;
+        let counter = (await kv.get<number>(ckey)) ?? 1000;
+  
+        for (let i = 0; i < parsed.length; i++) {
+          const p = parsed[i];
+          const at = nowIso();
+          counter += 1;
+          const req: ServiceRequest = {
+            id: uuid(),
+            requestNumber: formatRequestNumber(p.details.serviceType, year, counter),
+            userId,
+            serviceType: p.details.serviceType,
+            status: 'SUBMITTED',
+            locationId: p.villageId,
+            surveyNo: p.details.surveyNo,
+            hissaNo: p.details.hissaNo,
+            periodOrYear: periodLabel(p.details),
+            serviceMetadata: toServiceMetadata(p.details),
+            matterTag: p.matterTag,
+            batchId: p.batchId,
+            deliveryMode: p.delivery.mode,
+            shippingAddress: p.delivery.address,
+            createdAt: at,
+            updatedAt: at,
+          };
+          created.push(req);
+          await pushTo<TimelineEntry>('timeline', {
+            id: uuid(),
+            requestId: req.id,
+            fromStatus: null,
+            toStatus: 'SUBMITTED',
+            note: 'Request submitted',
+            actorId: userId,
+            createdAt: at,
+          });
+          for (const f of files?.[i] ?? []) {
+            await newDoc(req.id, f, { fileType: 'CUSTOMER_REFERENCE', fileName: f.name, uploadedById: userId });
+          }
         }
-      }
-      await kv.set('requests', [...requests, ...created]);
-      await kv.set(ckey, counter);
-      return created;
+        await kv.set('requests', [...requests, ...created]);
+        await kv.set(ckey, counter);
+        return created;
+      });
     },
 
-    async transition(id, to, opts) {
-      const { all, req } = await findRequest(id);
-      const from = req.status;
-      if (!canTransition(from, to)) throw new StoreError('ILLEGAL_TRANSITION', `${from} -> ${to} is not allowed`);
-      const runnerName = opts.runnerName?.trim() || req.runnerName;
-      if (to === 'ASSIGNED_TO_RUNNER' && !runnerName) throw new StoreError('RUNNER_REQUIRED');
-      const docs = to === 'RECORD_UNAVAILABLE' || to === 'DELIVERED' ? (await load<RequestDocument>('documents')).filter((d) => d.requestId === id) : [];
-      if (to === 'RECORD_UNAVAILABLE' && !docs.some((d) => d.fileType === 'ENDORSEMENT_CERTIFICATE')) {
-        throw new StoreError('ENDORSEMENT_REQUIRED');
-      }
-      const consignmentNo = opts.consignmentNo?.trim() || req.consignmentNo;
-      if (to === 'DELIVERED') {
-        if (!docs.some((d) => d.fileType === 'FINAL_DELIVERABLE')) throw new StoreError('DELIVERABLE_REQUIRED');
-        if (req.deliveryMode !== 'DIGITAL' && !consignmentNo) throw new StoreError('CONSIGNMENT_REQUIRED');
-      }
-      if (to === 'ASSIGNED_TO_RUNNER') {
-        req.runnerName = runnerName;
-        req.assignedOpId = opts.actorId;
-      }
-      if (to === 'DELIVERED' && consignmentNo) req.consignmentNo = consignmentNo;
-      await logTransition(req, from, to, opts.actorId, opts.note);
-      await saveRequest(all, req);
-      return req;
-    },
-
-    async sendMessage(id, msg, actorId) {
-      const { all, req } = await findRequest(id);
-      const tpl = msg.templateKey ? CLARIFICATION_TEMPLATES.find((t) => t.key === msg.templateKey) : undefined;
-      if (msg.templateKey && !tpl) throw new StoreError('VALIDATION', `Unknown template ${msg.templateKey}`);
-      if (!tpl && !msg.body?.trim()) throw new StoreError('VALIDATION', 'Message needs a template or body');
-      const message: RequestMessage = {
-        id: uuid(),
-        requestId: id,
-        direction: 'OUTBOUND',
-        templateKey: msg.templateKey,
-        body: msg.body,
-        senderId: actorId,
-        createdAt: nowIso(),
-      };
-      await pushTo('messages', message);
-      if (tpl?.needsReply && NEEDS_REPLY_FROM.includes(req.status)) {
-        await logTransition(req, req.status, 'ACTION_REQUIRED', actorId, tpl.key);
+    transition(id, to, opts) {
+      return serial(async () => {
+        const { all, req } = await findRequest(id);
+        const from = req.status;
+        if (!canTransition(from, to)) throw new StoreError('ILLEGAL_TRANSITION', `${from} -> ${to} is not allowed`);
+        const runnerName = opts.runnerName?.trim() || req.runnerName;
+        if (to === 'ASSIGNED_TO_RUNNER' && !runnerName) throw new StoreError('RUNNER_REQUIRED');
+        const docs = to === 'RECORD_UNAVAILABLE' || to === 'DELIVERED' ? (await load<RequestDocument>('documents')).filter((d) => d.requestId === id) : [];
+        if (to === 'RECORD_UNAVAILABLE' && !docs.some((d) => d.fileType === 'ENDORSEMENT_CERTIFICATE')) {
+          throw new StoreError('ENDORSEMENT_REQUIRED');
+        }
+        const consignmentNo = opts.consignmentNo?.trim() || req.consignmentNo;
+        if (to === 'DELIVERED') {
+          if (!docs.some((d) => d.fileType === 'FINAL_DELIVERABLE')) throw new StoreError('DELIVERABLE_REQUIRED');
+          if (req.deliveryMode !== 'DIGITAL' && !consignmentNo) throw new StoreError('CONSIGNMENT_REQUIRED');
+        }
+        if (to === 'ASSIGNED_TO_RUNNER') {
+          req.runnerName = runnerName;
+          req.assignedOpId = opts.actorId;
+        }
+        if (to === 'DELIVERED' && consignmentNo) req.consignmentNo = consignmentNo;
+        await logTransition(req, from, to, opts.actorId, opts.note);
         await saveRequest(all, req);
-      }
-      return message;
+        return req;
+      });
     },
 
-    async receiveCustomerReply(id, reply) {
-      const { all, req } = await findRequest(id);
-      if (!reply.body?.trim() && !reply.file) throw new StoreError('VALIDATION', 'Reply needs text or a file');
-      let mediaKey: string | undefined;
-      if (reply.file) {
-        const doc = await newDoc(id, reply.file, { fileType: 'CUSTOMER_REFERENCE', fileName: reply.file.name, uploadedById: req.userId });
-        mediaKey = doc.storageKey;
-      }
-      const message: RequestMessage = {
-        id: uuid(),
-        requestId: id,
-        direction: 'INBOUND',
-        body: reply.body,
-        mediaKey,
-        senderId: req.userId,
-        createdAt: nowIso(),
-      };
-      await pushTo('messages', message);
-      if (req.status === 'ACTION_REQUIRED') {
-        await logTransition(req, 'ACTION_REQUIRED', 'CUSTOMER_RESPONDED', req.userId, 'Customer replied');
-        await saveRequest(all, req);
-      }
-      return message;
+    sendMessage(id, msg, actorId) {
+      return serial(async () => {
+        const { all, req } = await findRequest(id);
+        const tpl = msg.templateKey ? CLARIFICATION_TEMPLATES.find((t) => t.key === msg.templateKey) : undefined;
+        if (msg.templateKey && !tpl) throw new StoreError('VALIDATION', `Unknown template ${msg.templateKey}`);
+        if (!tpl && !msg.body?.trim()) throw new StoreError('VALIDATION', 'Message needs a template or body');
+        const message: RequestMessage = {
+          id: uuid(),
+          requestId: id,
+          direction: 'OUTBOUND',
+          templateKey: msg.templateKey,
+          body: msg.body,
+          senderId: actorId,
+          createdAt: nowIso(),
+        };
+        await pushTo('messages', message);
+        if (tpl?.needsReply && NEEDS_REPLY_FROM.includes(req.status)) {
+          await logTransition(req, req.status, 'ACTION_REQUIRED', actorId, tpl.key);
+          await saveRequest(all, req);
+        }
+        return message;
+      });
     },
 
-    async addNote(id, body, authorId) {
-      await findRequest(id);
-      const note: InternalNote = { id: uuid(), requestId: id, body, authorId, createdAt: nowIso() };
-      await pushTo('notes', note);
-      return note;
+    receiveCustomerReply(id, reply) {
+      return serial(async () => {
+        const { all, req } = await findRequest(id);
+        if (!reply.body?.trim() && !reply.file) throw new StoreError('VALIDATION', 'Reply needs text or a file');
+        let mediaKey: string | undefined;
+        if (reply.file) {
+          const doc = await newDoc(id, reply.file, { fileType: 'CUSTOMER_REFERENCE', fileName: reply.file.name, uploadedById: req.userId });
+          mediaKey = doc.storageKey;
+        }
+        const message: RequestMessage = {
+          id: uuid(),
+          requestId: id,
+          direction: 'INBOUND',
+          body: reply.body,
+          mediaKey,
+          senderId: req.userId,
+          createdAt: nowIso(),
+        };
+        await pushTo('messages', message);
+        if (req.status === 'ACTION_REQUIRED') {
+          await logTransition(req, 'ACTION_REQUIRED', 'CUSTOMER_RESPONDED', req.userId, 'Customer replied');
+          await saveRequest(all, req);
+        }
+        return message;
+      });
     },
 
-    async addDocument(id, blob, meta) {
-      await findRequest(id);
-      return newDoc(id, blob, meta);
+    addNote(id, body, authorId) {
+      return serial(async () => {
+        await findRequest(id);
+        const note: InternalNote = { id: uuid(), requestId: id, body, authorId, createdAt: nowIso() };
+        await pushTo('notes', note);
+        return note;
+      });
+    },
+
+    addDocument(id, blob, meta) {
+      return serial(async () => {
+        await findRequest(id);
+        return newDoc(id, blob, meta);
+      });
     },
 
     async getBlob(storageKey) {
       return (await kv.get<Blob>(storageKey)) ?? null;
     },
 
-    async reset() {
-      await kv.clear();
-      await ensureSeeded();
+    reset() {
+      return serial(async () => {
+        await kv.clear();
+        await ensureSeeded();
+      });
     },
   };
   return store;

@@ -9,18 +9,28 @@ const StoreContext = createContext<DataStore | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<DataStore | null>(null);
+  const [failed, setFailed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const t = useTranslations('storage');
 
   useEffect(() => {
     let cancelled = false;
-    createDemoStore().then((s) => {
-      if (!cancelled) setStore(s);
-    });
+    createDemoStore()
+      .catch(() => createDemoStore({ memory: true }))
+      .then((s) => {
+        if (!cancelled) setStore(s);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  if (!store && failed) {
+    return <div role="alert" className="p-4 text-sm">{t('unavailable')}</div>;
+  }
 
   if (!store) {
     return (
