@@ -8,5 +8,6 @@
     "admin": "Operator desk"
   },
   "Locale": { "label": "Language", "switchTo": "ಕನ್ನಡ" },
-  "Home": { "heading": "Old Land Records" }
+  "Home": { "heading": "Old Land Records" },
+  "storage": { "unavailable": "Storage unavailable — changes won't survive a refresh", "dismiss": "Dismiss" }
 }

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { StoreProvider } from "@/data/provider";
 import { Header } from "@/components/shell/Header";
 
 const notoSans = Noto_Sans({
@@ -51,7 +52,9 @@ export default async function LocaleLayout({
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <StoreProvider>{children}</StoreProvider>
+          </main>
         </NextIntlClientProvider>
       </body>
     </html>
