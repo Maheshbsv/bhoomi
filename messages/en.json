@@ -1,0 +1,12 @@
+{
+  "Brand": { "name": "Hale Dakhale", "tagline": "Old Land Records" },
+  "Demo": { "strip": "Demo — sample data, no messages are sent" },
+  "Nav": {
+    "request": "Request",
+    "track": "Track",
+    "pro": "For advocates",
+    "admin": "Operator desk"
+  },
+  "Locale": { "label": "Language", "switchTo": "ಕನ್ನಡ" },
+  "Home": { "heading": "Old Land Records" }
+}
