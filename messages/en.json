@@ -1,5 +1,8 @@
 {
-  "brand": { "name": "Hale Dakhale", "tagline": "Old Land Records" },
+  "brand": {
+    "name": "Hale Dakhale",
+    "tagline": "Old Land Records"
+  },
   "demo": {
     "strip": "Demo — sample data, no messages are sent",
     "controls": "Demo controls",
@@ -26,7 +29,10 @@
     "admin": "Operator desk",
     "menu": "Menu"
   },
-  "locale": { "label": "Language", "switchTo": "ಕನ್ನಡ" },
+  "locale": {
+    "label": "Language",
+    "switchTo": "ಕನ್ನಡ"
+  },
   "landing": {
     "title": "Old land records, found for you",
     "pitch": "Order old RTCs, mutation registers and land files from taluk archives. We search, scan and deliver them to your phone.",
@@ -45,7 +51,11 @@
     "step3Title": "Get your copy",
     "step3Desc": "Download the watermarked PDF, or receive a printed copy."
   },
-  "sla": { "green": "SLA: green", "orange": "SLA: orange", "red": "SLA: red" },
+  "sla": {
+    "green": "SLA: green",
+    "orange": "SLA: orange",
+    "red": "SLA: red"
+  },
   "status": {
     "SUBMITTED": "Submitted",
     "UNDER_REVIEW": "Under review",
@@ -60,11 +70,26 @@
     "CANCELLED": "Cancelled"
   },
   "services": {
-    "OLD_RTC": { "name": "Old RTC (Pahani)", "desc": "Past-year copies of the record of rights, tenancy and crops for a survey number." },
-    "OLD_MR": { "name": "Old Mutation Register", "desc": "The mutation entry showing how ownership changed hands." },
-    "LND_FILE": { "name": "Land Grant File (Darkhast)", "desc": "The original grant file, including the grant order and saguvali chit." },
-    "LRF_FILE": { "name": "Land Reforms File", "desc": "Tenancy files such as Form 7, Form 7A and occupancy certificates." },
-    "RRT_FILE": { "name": "RRT Dispute File", "desc": "Revenue Appellate Tribunal dispute files and orders." }
+    "OLD_RTC": {
+      "name": "Old RTC (Pahani)",
+      "desc": "Past-year copies of the record of rights, tenancy and crops for a survey number."
+    },
+    "OLD_MR": {
+      "name": "Old Mutation Register",
+      "desc": "The mutation entry showing how ownership changed hands."
+    },
+    "LND_FILE": {
+      "name": "Land Grant File (Darkhast)",
+      "desc": "The original grant file, including the grant order and saguvali chit."
+    },
+    "LRF_FILE": {
+      "name": "Land Reforms File",
+      "desc": "Tenancy files such as Form 7, Form 7A and occupancy certificates."
+    },
+    "RRT_FILE": {
+      "name": "RRT Dispute File",
+      "desc": "Revenue Appellate Tribunal dispute files and orders."
+    }
   },
   "templates": {
     "SURVEY_VILLAGE_MISMATCH": "Survey number does not match the selected village register.",
@@ -90,5 +115,112 @@
     "NOT_FOUND": "Request not found",
     "UNKNOWN_USER": "That user could not be found"
   },
-  "storage": { "unavailable": "Storage unavailable — changes won't survive a refresh", "dismiss": "Dismiss" }
+  "storage": {
+    "unavailable": "Storage unavailable — changes won't survive a refresh",
+    "dismiss": "Dismiss"
+  },
+  "wizard": {
+    "optional": "optional",
+    "back": "Back",
+    "next": "Next",
+    "progress": "Request progress",
+    "stepOf": "Step {n} of {total}",
+    "steps": {
+      "service": "Service",
+      "location": "Location",
+      "details": "Details",
+      "uploads": "Documents",
+      "delivery": "Delivery",
+      "verify": "Verify and submit"
+    },
+    "search": "Search in English or Kannada",
+    "noMatch": "No match found",
+    "service": {
+      "heading": "Which record do you need?",
+      "hint": "Pick one. You can place another request afterwards."
+    },
+    "location": {
+      "heading": "Where is the land?",
+      "hint": "Choose from the district down to the village. Each list narrows the next.",
+      "pickDistrict": "Select district",
+      "pickTaluk": "Select taluk",
+      "pickHobli": "Select hobli",
+      "pickVillage": "Select village"
+    },
+    "details": {
+      "heading": "Record details",
+      "hint": "Fill in what you know. Fields marked * are needed.",
+      "useLetters": "Use letters",
+      "useNumbers": "Use numbers",
+      "surveyHint": "Numbers only by default. Tap \"Use letters\" for values like 108/A or 2B.",
+      "choose": "Select"
+    },
+    "upload": {
+      "heading": "Documents you already have",
+      "hint": "Optional. An old RTC, receipt or photo of the register helps the search. JPG, PNG or PDF, up to 10 MB each, up to 5 files.",
+      "skip": "Skip",
+      "reattach": "Please re-attach your files. They are not kept when the page is refreshed.",
+      "dragHere": "Drag files here, or",
+      "choose": "Choose files or take a photo",
+      "rules": "JPG, PNG or PDF. Up to 10 MB each. Up to 5 files.",
+      "count": "{n} of {max} files",
+      "remove": "Remove {name}",
+      "TYPE": "Only JPG, PNG or PDF files are accepted",
+      "SIZE": "The file is larger than 10 MB",
+      "COUNT": "You can attach at most 5 files"
+    },
+    "delivery": {
+      "heading": "How should we deliver it?",
+      "hint": "A digital copy is a watermarked PDF you can download from the tracking page.",
+      "DIGITAL": {
+        "name": "Digital copy",
+        "desc": "Download the PDF from your tracking page."
+      },
+      "PHYSICAL": {
+        "name": "Printed copy",
+        "desc": "We courier a printed copy to your address."
+      },
+      "BOTH": {
+        "name": "Digital and printed",
+        "desc": "Download the PDF and also receive a printed copy."
+      },
+      "emailHint": "Optional. For your own records; no email is sent in the demo.",
+      "addressHeading": "Delivery address"
+    },
+    "otp": {
+      "send": "Send OTP",
+      "resend": "Resend",
+      "demoOtp": "Demo OTP: {otp}",
+      "wrong": "That code is not correct. Try again.",
+      "verify": "Verify"
+    },
+    "verify": {
+      "heading": "Verify your phone",
+      "hint": "Enter your mobile number. We use it to find your requests later.",
+      "done": "Phone verified: {phone}"
+    },
+    "review": {
+      "heading": "Check your request",
+      "service": "Service",
+      "location": "Location",
+      "files": "Documents",
+      "fileCount": "{n} attached",
+      "noFiles": "None attached",
+      "delivery": "Delivery",
+      "submit": "Submit request",
+      "submitting": "Submitting..."
+    },
+    "success": {
+      "heading": "Request received",
+      "subheading": "Keep this number to track your request.",
+      "numberLabel": "Your request number",
+      "copy": "Copy number",
+      "copied": "Copied",
+      "whatsapp": "Share on WhatsApp",
+      "shareText": "My land record request {number} is placed. Track it here: {url}",
+      "track": "Track this request",
+      "missing": "No request number found.",
+      "newRequest": "Start a request"
+    }
+  }
 }
