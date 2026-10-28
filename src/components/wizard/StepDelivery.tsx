@@ -3,24 +3,14 @@
 import { useEffect } from 'react';
 import { useForm, useWatch, type FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { DeliverySchema } from '@/domain/schemas';
 import { Input } from '@/components/ui/input';
 import { useWizard, type WizardDelivery } from '@/store/wizard';
 import { cn } from '@/lib/utils';
 import type { FieldName } from './fieldLabels';
+import { DeliveryFormSchema } from './deliveryForm';
 import { FieldShell, inputClass, useErrorText } from './Field';
 import { StepNav } from './StepNav';
-
-/** A digital-only order ignores any half-typed address. */
-const FormSchema = z.preprocess(
-  (v) => {
-    const o = v as { mode?: string };
-    return o?.mode === 'DIGITAL' || !o?.mode ? { ...o, address: undefined } : v;
-  },
-  DeliverySchema,
-);
 
 const MODES = ['DIGITAL', 'PHYSICAL', 'BOTH'] as const;
 
@@ -42,7 +32,7 @@ export function StepDelivery() {
   const setStep = useWizard((s) => s.setStep);
 
   const form = useForm<FieldValues>({
-    resolver: zodResolver(FormSchema as never),
+    resolver: zodResolver(DeliveryFormSchema as never),
     defaultValues: {
       mode: saved?.mode ?? 'DIGITAL',
       email: saved?.email ?? '',
@@ -59,7 +49,10 @@ export function StepDelivery() {
   }, [subscribe, patch]);
 
   return (
-    <form id="delivery-form" noValidate onSubmit={handleSubmit(() => setStep(5))}>
+    <form id="delivery-form" noValidate onSubmit={handleSubmit((data) => {
+      patch({ delivery: data as WizardDelivery });
+      setStep(5);
+    })}>
       <h2 className="text-xl font-semibold">{t('heading')}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{t('hint')}</p>
 
