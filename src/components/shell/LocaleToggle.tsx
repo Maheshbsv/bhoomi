@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "@/i18n/routing";
 
 export function LocaleToggle() {
   const locale = useLocale();
-  const t = useTranslations("Locale");
+  const t = useTranslations("locale");
   const pathname = usePathname();
   const router = useRouter();
   const next = locale === "en" ? "kn" : "en";

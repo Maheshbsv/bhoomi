@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 
 export function DemoStrip() {
-  const t = useTranslations("Demo");
+  const t = useTranslations("demo");
   return (
     <div
       role="note"

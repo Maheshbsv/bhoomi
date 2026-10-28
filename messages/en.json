@@ -1,13 +1,94 @@
 {
-  "Brand": { "name": "Hale Dakhale", "tagline": "Old Land Records" },
-  "Demo": { "strip": "Demo — sample data, no messages are sent" },
-  "Nav": {
+  "brand": { "name": "Hale Dakhale", "tagline": "Old Land Records" },
+  "demo": {
+    "strip": "Demo — sample data, no messages are sent",
+    "controls": "Demo controls",
+    "viewAs": "View as",
+    "citizen": "Citizen",
+    "advocate": "Advocate",
+    "operator": "Operator",
+    "reset": "Reset demo data",
+    "resetTitle": "Reset demo data?",
+    "resetBody": "This erases everything you created and restores the original sample requests.",
+    "resetConfirm": "Yes, reset",
+    "cancel": "Cancel",
+    "resetDone": "Demo data restored",
+    "signedInAs": "Signed in as {name}",
+    "signOut": "Sign out",
+    "notSignedIn": "Not signed in",
+    "unnamed": "Guest",
+    "error": "Something went wrong. Please try again."
+  },
+  "nav": {
     "request": "Request",
     "track": "Track",
     "pro": "For advocates",
-    "admin": "Operator desk"
+    "admin": "Operator desk",
+    "menu": "Menu"
   },
-  "Locale": { "label": "Language", "switchTo": "ಕನ್ನಡ" },
-  "Home": { "heading": "Old Land Records" },
+  "locale": { "label": "Language", "switchTo": "ಕನ್ನಡ" },
+  "landing": {
+    "title": "Old land records, found for you",
+    "pitch": "Order old RTCs, mutation registers and land files from taluk archives. We search, scan and deliver them to your phone.",
+    "cta": "Request a record",
+    "servicesTitle": "What do you need?",
+    "typicalDays": "Typically {min}–{max} days",
+    "trackTitle": "Track a request",
+    "trackLabel": "Request number",
+    "trackPlaceholder": "KAR-2026-RTC-1001",
+    "trackButton": "Track",
+    "howTitle": "How it works",
+    "step1Title": "Tell us the record",
+    "step1Desc": "Choose the service, village and survey number.",
+    "step2Title": "We search the archive",
+    "step2Desc": "A runner finds the old register at the taluk office and scans it.",
+    "step3Title": "Get your copy",
+    "step3Desc": "Download the watermarked PDF, or receive a printed copy."
+  },
+  "sla": { "green": "SLA: green", "orange": "SLA: orange", "red": "SLA: red" },
+  "status": {
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "ACTION_REQUIRED": "Action required",
+    "CUSTOMER_RESPONDED": "Customer responded",
+    "ASSIGNED_TO_RUNNER": "Assigned to runner",
+    "ARCHIVE_SEARCH_IN_PROGRESS": "Archive search in progress",
+    "DOCUMENT_RETRIEVED": "Document retrieved",
+    "QC_WATERMARK_MERGE": "Quality check and watermark",
+    "RECORD_UNAVAILABLE": "Record unavailable",
+    "DELIVERED": "Delivered",
+    "CANCELLED": "Cancelled"
+  },
+  "services": {
+    "OLD_RTC": { "name": "Old RTC (Pahani)", "desc": "Past-year copies of the record of rights, tenancy and crops for a survey number." },
+    "OLD_MR": { "name": "Old Mutation Register", "desc": "The mutation entry showing how ownership changed hands." },
+    "LND_FILE": { "name": "Land Grant File (Darkhast)", "desc": "The original grant file, including the grant order and saguvali chit." },
+    "LRF_FILE": { "name": "Land Reforms File", "desc": "Tenancy files such as Form 7, Form 7A and occupancy certificates." },
+    "RRT_FILE": { "name": "RRT Dispute File", "desc": "Revenue Appellate Tribunal dispute files and orders." }
+  },
+  "templates": {
+    "SURVEY_VILLAGE_MISMATCH": "Survey number does not match the selected village register.",
+    "MULTIPLE_ENTRIES_NEED_FATHER_NAME": "Multiple entries found for this surname; please share the ancestor's father's name.",
+    "RECORD_BRITTLE_SEARCH_ONGOING": "Record volume is brittle or partly damaged at the taluk; search is ongoing.",
+    "REQUEST_CLEARER_PHOTO": "Please share a clearer photo of the old document you uploaded."
+  },
+  "errors": {
+    "required": "This field is required",
+    "yearRange": "Enter a year between 1900 and this year",
+    "yearOrder": "The first year cannot be after the last year",
+    "phone": "Enter a 10-digit mobile number",
+    "pincode": "Enter a 6-digit pincode",
+    "addressRequired": "Please enter the delivery address",
+    "email": "Enter a valid email address",
+    "ILLEGAL_TRANSITION": "That status change is not allowed",
+    "RUNNER_REQUIRED": "Assign a runner first",
+    "ENDORSEMENT_REQUIRED": "Upload the endorsement certificate first",
+    "DELIVERABLE_REQUIRED": "Generate the final PDF first",
+    "CONSIGNMENT_REQUIRED": "Enter the consignment number first",
+    "VALIDATION": "Some details are missing or invalid",
+    "UNKNOWN_LOCATION": "That village could not be found",
+    "NOT_FOUND": "Request not found",
+    "UNKNOWN_USER": "That user could not be found"
+  },
   "storage": { "unavailable": "Storage unavailable — changes won't survive a refresh", "dismiss": "Dismiss" }
 }

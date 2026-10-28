@@ -7,6 +7,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { StoreProvider } from "@/data/provider";
 import { Header } from "@/components/shell/Header";
+import { DemoControls } from "@/components/shell/DemoControls";
+import { SessionHydrator } from "@/components/shell/SessionHydrator";
+import { Toaster } from "@/components/ui/sonner";
 
 const notoSans = Noto_Sans({
   subsets: ["latin"],
@@ -29,7 +32,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "Brand" });
+  const t = await getTranslations({ locale, namespace: "brand" });
   return { title: `${t("name")} — ${t("tagline")}` };
 }
 
@@ -52,9 +55,14 @@ export default async function LocaleLayout({
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>
           <Header />
-          <main className="flex-1">
-            <StoreProvider>{children}</StoreProvider>
-          </main>
+          <SessionHydrator />
+          <StoreProvider>
+            <main className="flex-1">{children}</main>
+            <footer className="border-t bg-muted/50">
+              <DemoControls />
+            </footer>
+          </StoreProvider>
+          <Toaster theme="light" />
         </NextIntlClientProvider>
       </body>
     </html>
