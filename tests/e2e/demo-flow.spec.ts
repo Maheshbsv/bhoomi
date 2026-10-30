@@ -1,0 +1,255 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { expect, test, type Page } from "@playwright/test";
+import { PDFDocument } from "pdf-lib";
+import en from "../../messages/en.json";
+import kn from "../../messages/kn.json";
+
+const FIX = (name: string) => path.join(__dirname, "fixtures", name);
+const MESSAGES = { en, kn };
+type Locale = keyof typeof MESSAGES;
+
+const NUMBER_RE = /KAR-\d{4}-(RTC|MR|LND|LRF|RRT)-\d{4}/;
+
+/** Same-origin responses under /bhoomi/ that came back 404 (missing RSC payloads, chunks, fonts). */
+test.beforeEach(async ({ page }) => {
+  const missing: string[] = [];
+  page.on("response", (r) => {
+    const u = new URL(r.url());
+    if (u.origin === "http://localhost:4173" && u.pathname.startsWith("/bhoomi/") && r.status() === 404) {
+      missing.push(u.pathname);
+    }
+  });
+  (page as Page & { __missing: string[] }).__missing = missing;
+});
+
+test.afterEach(async ({ page }) => {
+  expect((page as Page & { __missing: string[] }).__missing, "no /bhoomi/ request may return 404").toEqual([]);
+});
+
+// ---------- helpers ----------
+
+async function pickLocation(page: Page, names: [string, string, string, string]) {
+  const ids = ["#loc-district", "#loc-taluk", "#loc-hobli", "#loc-village"];
+  for (let i = 0; i < ids.length; i++) {
+    await page.locator(ids[i]).click();
+    await page.getByRole("option", { name: new RegExp(`^${names[i]} /`) }).click();
+  }
+}
+
+async function verifyAndSubmit(page: Page, locale: Locale, phone: string): Promise<string> {
+  const w = MESSAGES[locale].wizard;
+  await page.locator("#otp-phone").fill(phone);
+  await page.getByRole("button", { name: w.otp.send, exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "123456" })).toBeVisible();
+  await page.locator("#otp-code").fill("123456");
+  await page.getByRole("button", { name: w.otp.verify, exact: true }).click();
+  await page.getByRole("button", { name: w.review.submit, exact: true }).click();
+  const number = page.getByTestId("request-number");
+  await expect(number).toHaveText(NUMBER_RE);
+  return (await number.textContent())!.trim();
+}
+
+/** Orders a Land Reforms file (no survey number needed) with a typed applicant name. */
+async function orderLrf(page: Page, locale: Locale, applicant: string): Promise<string> {
+  const w = MESSAGES[locale].wizard;
+  await page.goto(`/bhoomi/${locale}/request/?service=LRF_FILE`);
+  await pickLocation(page, ["Bengaluru Urban", "Yelahanka", "Jala", "Bagalur"]);
+  await page.getByRole("button", { name: w.next, exact: true }).click();
+  await page.getByLabel(/Form type/).selectOption("FORM_7");
+  await page.getByLabel(/Applicant \/ tenant name/).fill(applicant);
+  await page.getByRole("button", { name: w.next, exact: true }).click();
+  await page.getByRole("button", { name: w.upload.skip, exact: true }).click();
+  await page.getByRole("button", { name: w.next, exact: true }).click(); // digital is the default
+  return verifyAndSubmit(page, locale, "9876543210");
+}
+
+async function signInOperator(page: Page, url: string, locale: Locale = "en") {
+  await page.goto(url);
+  const prefix = MESSAGES[locale].admin.signInAs.split("{name}")[0].trim();
+  const signIn = page.getByRole("main").getByRole("button", { name: new RegExp("^" + prefix) });
+  const actions = page.getByRole("tab", { name: "Actions" });
+  const queue = page.locator("#q-search");
+  await signIn.or(actions).or(queue).first().waitFor();
+  if (await signIn.first().isVisible()) await signIn.first().click();
+}
+
+async function searchQueue(page: Page, text: string) {
+  await page.locator("#q-search").fill(text);
+}
+
+async function applyStatus(page: Page, label: string, runner?: string) {
+  await page.getByRole("tab", { name: "Actions" }).click();
+  await page.getByLabel("Next status").selectOption({ label });
+  if (runner) await page.getByLabel("Runner name").fill(runner);
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByText("Status updated").first()).toBeVisible();
+}
+
+// ---------- tests ----------
+
+test("citizen orders, operator clarifies and delivers, citizen downloads the PDF", async ({ page }) => {
+  // Citizen: order an Old RTC
+  await page.goto("/bhoomi/en/");
+  await page.getByRole("link", { name: /Old RTC \(Pahani\)/ }).click();
+  await pickLocation(page, ["Bengaluru Urban", "Yelahanka", "Jala", "Bagalur"]);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByLabel(/Survey No/).fill("45");
+  await page.getByLabel(/From year/).fill("1975");
+  await page.getByLabel(/To year/).fill("1982");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.locator("#file-input").setInputFiles(FIX("deed.jpg"));
+  await expect(page.getByText("deed.jpg")).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("radio", { name: /^Digital copy/ }).check();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  const number = await verifyAndSubmit(page, "en", "9876543210");
+
+  // Operator: find it, move to Under review, ask for the father's name
+  await signInOperator(page, "/bhoomi/en/admin/");
+  await searchQueue(page, number);
+  await page.getByRole("link", { name: number }).click();
+  await expect(page).toHaveURL(/admin\/request\/\?id=/);
+  const workspaceUrl = page.url();
+  await applyStatus(page, "Under review");
+  await page.getByRole("tab", { name: "Chat" }).click();
+  await page.getByRole("button", { name: /Multiple entries found for this surname/ }).click();
+  await expect(page.getByRole("tab", { name: "Actions" })).toBeVisible();
+
+  // Citizen: banner on the track page, reply
+  await page.goto(`/bhoomi/en/track/?id=${number}`);
+  await expect(page.getByText("We need something from you")).toBeVisible();
+  await page.getByLabel("Your reply").fill("Father: Chikkanna");
+  await page.getByRole("button", { name: "Send reply" }).click();
+  await expect(page.getByText("Reply sent. Your request is back under review.").first()).toBeVisible();
+
+  // Operator: runner, searching, scans, PDF, deliver
+  await signInOperator(page, workspaceUrl);
+  await page.getByRole("tab", { name: "Chat" }).click();
+  await expect(page.getByText("Father: Chikkanna")).toBeVisible();
+  await applyStatus(page, "Assigned to runner", "Nagaraj (Yelahanka)");
+  await applyStatus(page, "Archive search in progress");
+  await page.getByLabel("Add scans").setInputFiles([FIX("scan1.jpg"), FIX("scan2-large.jpg")]);
+  await expect(page.getByText("scan2-large.jpg")).toBeVisible();
+  await page.getByRole("button", { name: "Generate watermarked PDF" }).click();
+  await page.getByRole("button", { name: "Save as final" }).click();
+  await expect(page.getByText("Final PDF saved")).toBeVisible();
+  await applyStatus(page, "Document retrieved");
+  await applyStatus(page, "Quality check and watermark");
+  await page.getByRole("button", { name: "Deliver", exact: true }).click();
+  await expect(page.getByText("Would send via WhatsApp + email (demo)")).toBeVisible();
+
+  // Citizen: delivered, download a real multi-page A4 PDF
+  await page.goto(`/bhoomi/en/track/?id=${number}`);
+  await expect(page.locator('[data-status="DELIVERED"]')).toHaveText("Delivered");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download" }).first().click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+  const file = await download.path();
+  const bytes = readFileSync(file);
+  expect(bytes.length).toBeGreaterThan(1024);
+  const pdf = await PDFDocument.load(bytes);
+  expect(pdf.getPageCount()).toBe(2); // one page per scan
+  for (const p of pdf.getPages()) {
+    const { width, height } = p.getSize();
+    expect(width).toBeCloseTo(595.28, 1);
+    expect(height).toBeCloseTo(841.89, 1);
+  }
+});
+
+test("Kannada order: name typed in Kannada is found in the operator queue", async ({ page }) => {
+  const name = "ಚಿಕ್ಕಣ್ಣ ಗೌಡ";
+  const number = await orderLrf(page, "kn", name);
+  expect(number).toMatch(/-LRF-/);
+
+  await signInOperator(page, "/bhoomi/kn/admin/", "kn");
+  await searchQueue(page, name);
+  const row = page.getByTestId("queue-row").filter({ hasText: number });
+  await expect(row).toHaveCount(1);
+  await expect(page.getByTestId("queue-row")).toHaveCount(1);
+});
+
+test("advocate bulk-orders under a matter and sees the vault", async ({ page }) => {
+  const matter = "Devanahalli 15-Acre Title Verification";
+  await page.goto("/bhoomi/en/pro/");
+  await page.getByRole("main").getByRole("button", { name: /Sign in as/ }).first().click();
+  const card = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: matter }) });
+  const counter = card.getByText(/^\d+ requests?$/);
+  await expect(counter).toBeVisible();
+  const before = Number((await counter.textContent())!.match(/\d+/)![0]);
+
+  await page.getByRole("link", { name: "New bulk order" }).click();
+  await page.locator("#bulk-village").click();
+  await page.locator("[cmdk-item]").first().click();
+  await page.locator("#bulk-matter").selectOption({ label: matter });
+  await page.getByLabel("Paste from Excel").fill("301\t1\t1980\r\n302\t2\t1981-1985\r\n303\t\t1990\r\n");
+  await page.getByRole("button", { name: "Add pasted rows" }).click();
+  await page.getByRole("button", { name: /^Create 3 requests$/ }).click();
+
+  await expect(page.getByRole("heading", { name: "3 requests created" })).toBeVisible();
+  const created = page.getByRole("link", { name: NUMBER_RE });
+  await expect(created).toHaveCount(3);
+
+  await page.getByRole("link", { name: "View this matter" }).click();
+  await expect(page.getByRole("heading", { name: matter })).toBeVisible();
+  await page.getByRole("link", { name: "All matters" }).click();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("heading", { name: matter }) })
+      .getByText(`${before + 3} requests`, { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Document vault" }).click();
+  const downloads = page.getByRole("button", { name: /^Download / });
+  await expect(downloads.first()).toBeVisible();
+  const [dl] = await Promise.all([page.waitForEvent("download"), downloads.first().click()]);
+  expect(dl.suggestedFilename().length).toBeGreaterThan(0);
+});
+
+test("Reset demo data restores the seeded queue and removes new requests", async ({ page }) => {
+  const results = page.getByText(/^\d+ requests?$/);
+  await signInOperator(page, "/bhoomi/en/admin/");
+  await expect(results).toBeVisible();
+  const seeded = await results.textContent();
+
+  const number = await orderLrf(page, "en", "Reset Probe");
+  await signInOperator(page, "/bhoomi/en/admin/");
+  await expect(results).not.toHaveText(seeded!);
+  await searchQueue(page, number);
+  await expect(page.getByTestId("queue-row")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Reset demo data" }).click();
+  await page.getByRole("button", { name: "Yes, reset" }).click();
+  await expect(page.getByText("Demo data restored").first()).toBeVisible();
+
+  await signInOperator(page, "/bhoomi/en/admin/");
+  await expect(results).toHaveText(seeded!);
+  await searchQueue(page, number);
+  await expect(page.getByText("No requests match these filters.")).toBeVisible();
+});
+
+test("root URL redirects to the English site", async ({ page }) => {
+  await page.goto("/bhoomi/");
+  await expect(page).toHaveURL(/\/bhoomi\/en\/$/);
+});
+
+test("switching delivery from Physical back to Digital still submits", async ({ page }) => {
+  await page.goto("/bhoomi/en/request/?service=LRF_FILE");
+  await pickLocation(page, ["Bengaluru Urban", "Yelahanka", "Jala", "Bagalur"]);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByLabel(/Form type/).selectOption("FORM_7A");
+  await page.getByLabel(/Applicant \/ tenant name/).fill("Toggle Probe");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+
+  await page.getByRole("radio", { name: /^Printed copy/ }).check();
+  await page.getByLabel(/Address line 1/).fill("12 MG R");
+  await page.getByRole("radio", { name: /^Digital copy/ }).check();
+  await expect(page.getByLabel(/Address line 1/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  const number = await verifyAndSubmit(page, "en", "9876543210");
+  expect(number).toMatch(NUMBER_RE);
+});
