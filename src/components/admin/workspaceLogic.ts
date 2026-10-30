@@ -53,3 +53,8 @@ export function operatorNote(note: string | undefined): OperatorNote | null {
   if (c?.kind === 'template') return { kind: 'template', key: c.key };
   return { kind: 'raw', text: note };
 }
+
+/** Identifies the ordered set of scans a PDF was built from. */
+export function scanSignature(scanIds: string[]): string {
+  return JSON.stringify(scanIds);
+}

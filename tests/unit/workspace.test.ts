@@ -8,6 +8,7 @@ import {
   operatorNote,
   reconcileOrder,
   scanOrderAfterMove,
+  scanSignature,
   PDF_LIMIT_BYTES,
 } from '@/components/admin/workspaceLogic';
 
@@ -78,5 +79,13 @@ describe('moveItem', () => {
     expect(moveItem(['a', 'b', 'c'], 2, 0)).toEqual(['c', 'a', 'b']);
     expect(moveItem(['a', 'b', 'c'], 1, 1)).toEqual(['a', 'b', 'c']);
     expect(moveItem(['a', 'b', 'c'], 5, 0)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('scanSignature', () => {
+  it('is equal for the same order and differs after reorder or addition', () => {
+    expect(scanSignature(['a', 'b'])).toBe(scanSignature(['a', 'b']));
+    expect(scanSignature(['a', 'b'])).not.toBe(scanSignature(['b', 'a']));
+    expect(scanSignature(['a', 'b'])).not.toBe(scanSignature(['a', 'b', 'c']));
   });
 });

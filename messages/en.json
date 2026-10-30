@@ -434,7 +434,8 @@
         "deliver": "Deliver",
         "delivering": "Delivering...",
         "deliverToast": "Would send via WhatsApp + email (demo)",
-        "size": "{size} MB"
+        "size": "{size} MB",
+        "stale": "Scans changed since the PDF was built. Generate it again."
       },
       "notes": {
         "title": "Internal notes",

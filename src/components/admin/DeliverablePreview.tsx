@@ -9,7 +9,7 @@ import type { RequestDocument } from '@/domain/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PDF_LIMIT_BYTES, canDeliver, canGenerate, canUploadScan, needsConsignment } from './workspaceLogic';
+import { PDF_LIMIT_BYTES, canDeliver, canGenerate, canUploadScan, needsConsignment, scanSignature } from './workspaceLogic';
 import { OpenLink } from './OpenLink';
 import { useBlobUrl } from './useBlobUrl';
 import type { Workspace } from './useWorkspace';
@@ -17,6 +17,7 @@ import type { Workspace } from './useWorkspace';
 interface Generated {
   blob: Blob;
   url: string;
+  sig: string;
 }
 
 export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: RequestDocument[] }) {
@@ -31,7 +32,7 @@ export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: Reques
   const [gen, setGen] = useState<Generated | null>(null);
   const genRef = useRef<Generated | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<'failed' | 'tooLarge' | null>(null);
+  const [error, setError] = useState<'failed' | 'tooLarge' | 'stale' | null>(null);
   const [consignment, setConsignment] = useState('');
 
   function replaceGen(next: Generated | null) {
@@ -47,6 +48,18 @@ export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: Reques
   );
 
   const hasFinal = !!finalDoc;
+  const sig = scanSignature(scans.map((s) => s.id));
+
+  // Drop the generated PDF once it no longer matches the scans on screen, or once a final exists.
+  useEffect(() => {
+    if (!gen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (hasFinal) replaceGen(null);
+    else if (gen.sig !== sig) {
+      replaceGen(null);
+      setError('stale');
+    }
+  }, [gen, hasFinal, sig]);
   const mayGenerate = canGenerate({ status: request.status, scanCount: scans.length, hasFinal });
 
   async function generate() {
@@ -69,7 +82,7 @@ export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: Reques
         return;
       }
       const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-      replaceGen({ blob, url: URL.createObjectURL(blob) });
+      replaceGen({ blob, url: URL.createObjectURL(blob), sig: scanSignature(scans.map((s) => s.id)) });
     } catch {
       setError('failed');
     } finally {
@@ -120,7 +133,7 @@ export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: Reques
       )}
       {error && (
         <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          {t(error === 'tooLarge' ? 'tooLarge' : 'failed')}
+          {t(error)}
         </p>
       )}
       {(gen || hasFinal) && (
