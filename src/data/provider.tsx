@@ -33,6 +33,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             return s;
           },
           (e) => {
+            // Let the next request try again; a failed chunk load or a stale tab shouldn't stick.
+            pending.current = null;
             setState({ store: null, failed: true });
             throw e;
           },

@@ -334,3 +334,21 @@ test("landing page shows demo controls without opening the store; role switch an
   await expect(page).toHaveURL(/\/en\/$/);
   await expect(controls.getByText("Not signed in")).toBeVisible();
 });
+
+test("language toggle keeps the draft after changing service from a service card", async ({ page }) => {
+  await page.goto("/bhoomi/en/request/?service=LRF_FILE");
+  await expect(page.getByText("Step 2 of 6")).toBeVisible();
+  await expect(page).not.toHaveURL(/service=/);
+
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("radio", { name: /^Old RTC/ }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Step 2 of 6")).toBeVisible();
+
+  await page.getByRole("banner").getByRole("button", { name: /Language/ }).click();
+  await expect(page).toHaveURL(/\/bhoomi\/kn\/request\/$/);
+  await page.getByRole("banner").getByRole("button", { name: /ಭಾಷೆ/ }).click();
+  await expect(page).toHaveURL(/\/bhoomi\/en\/request\/$/);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.getByRole("radio", { name: /^Old RTC/ })).toHaveAttribute("aria-checked", "true");
+});

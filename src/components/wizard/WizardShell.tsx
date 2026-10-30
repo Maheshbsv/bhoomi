@@ -35,6 +35,10 @@ export function WizardShell() {
         } else if (s.step === 0) {
           s.setStep(1);
         }
+        // Applied once. Left in the URL, a language toggle or refresh would re-apply it over the draft.
+        const url = new URL(window.location.href);
+        url.searchParams.delete('service');
+        window.history.replaceState(null, '', url);
       }
       setReady(true);
     });

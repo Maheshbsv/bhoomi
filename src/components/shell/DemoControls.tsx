@@ -35,13 +35,16 @@ export function DemoControls() {
   const ready = useSessionReady();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   async function switchRole(role: (typeof ROLES)[number]) {
+    setSwitching(true);
     let store;
     try {
       store = await requestStore();
     } catch {
       toast.error(tStorage('unavailable'));
+      setSwitching(false);
       return;
     }
     try {
@@ -51,6 +54,8 @@ export function DemoControls() {
       router.push(role.href);
     } catch {
       toast.error(t('error'));
+    } finally {
+      setSwitching(false);
     }
   }
 
@@ -81,7 +86,7 @@ export function DemoControls() {
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{t('viewAs')}</span>
         {ROLES.map((r) => (
-          <Button key={r.key} type="button" variant="outline" className="min-h-11 px-4" onClick={() => switchRole(r)}>
+          <Button key={r.key} type="button" variant="outline" className="min-h-11 px-4" disabled={switching} aria-busy={switching} onClick={() => switchRole(r)}>
             {t(r.key)}
           </Button>
         ))}
