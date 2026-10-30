@@ -66,3 +66,23 @@ describe('delivery form to CreateRequestInput', () => {
     expect(DeliveryFormSchema.safeParse({ mode: 'PHYSICAL', email: '', address: blank }).success).toBe(false);
   });
 });
+
+describe('delivery mode toggle', () => {
+  it('physical with partial address switched to digital still yields a valid input', () => {
+    const partial = { name: 'A', line1: '', line2: '', city: '', district: '', pincode: '12' };
+    const d = DeliveryFormSchema.parse({ mode: 'DIGITAL', email: '', address: partial });
+    expect(d.address).toBeUndefined();
+    const input = {
+      details: { serviceType: 'OLD_RTC', surveyNo: '108', yearFrom: '2005', yearTo: '2010' },
+      villageId: 1,
+      phone: '9876543210',
+      delivery: d,
+    };
+    expect(CreateRequestSchema.safeParse(input).success).toBe(true);
+  });
+
+  it('a stale raw digital value is sanitised by the form schema before submit', () => {
+    const raw = { mode: 'DIGITAL', email: '', address: { name: '', line1: '', city: '', district: '', pincode: '' } };
+    expect(DeliveryFormSchema.safeParse(raw).data).toEqual({ mode: 'DIGITAL' });
+  });
+});

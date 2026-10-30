@@ -27,7 +27,7 @@ export function StepDelivery() {
   const t = useTranslations('wizard.delivery');
   const tr = useTranslations();
   const errText = useErrorText();
-  const saved = useWizard((s) => s.delivery);
+  const saved = useWizard((s) => s.deliveryDraft ?? s.delivery) as Partial<WizardDelivery> | undefined;
   const patch = useWizard((s) => s.patch);
   const setStep = useWizard((s) => s.setStep);
 
@@ -45,7 +45,7 @@ export function StepDelivery() {
   const errors = formState.errors as Record<string, { message?: string } & Record<string, { message?: string }>>;
 
   useEffect(() => {
-    return subscribe({ formState: { values: true }, callback: ({ values }) => patch({ delivery: values as WizardDelivery }) });
+    return subscribe({ formState: { values: true }, callback: ({ values }) => patch({ deliveryDraft: values as Record<string, unknown> }) });
   }, [subscribe, patch]);
 
   return (

@@ -39,6 +39,8 @@ interface Data {
   /** How many files were attached; survives a refresh so we can ask for them again. */
   fileCount: number;
   delivery?: WizardDelivery;
+  /** Raw, possibly invalid delivery form values kept so Back/refresh keep typed text. Never submitted. */
+  deliveryDraft?: Record<string, unknown>;
   phone?: string;
 }
 
@@ -74,7 +76,7 @@ export const useWizard = create<WizardState>()(
         const files = get().files.filter((_, i) => i !== index);
         set({ files, fileCount: files.length });
       },
-      reset: () => set({ ...initial, serviceType: undefined, delivery: undefined, phone: undefined, location: {}, details: {}, files: [] }),
+      reset: () => set({ ...initial, serviceType: undefined, delivery: undefined, deliveryDraft: undefined, phone: undefined, location: {}, details: {}, files: [] }),
     }),
     {
       name: 'hd-wizard',
@@ -87,6 +89,7 @@ export const useWizard = create<WizardState>()(
         details: s.details,
         fileCount: s.fileCount,
         delivery: s.delivery,
+        deliveryDraft: s.deliveryDraft,
         phone: s.phone,
       }),
     },

@@ -11,6 +11,7 @@ import { CreateRequestSchema } from '@/domain/schemas';
 import { useSession } from '@/store/session';
 import { useWizard } from '@/store/wizard';
 import { OtpForm } from '@/components/shared/OtpForm';
+import { DeliveryFormSchema } from './deliveryForm';
 import { ReviewSummary } from './ReviewSummary';
 import { StepNav } from './StepNav';
 import { ReattachNotice } from './StepUploads';
@@ -31,10 +32,16 @@ export function StepVerify() {
     const w = useWizard.getState();
     const current = useSession.getState().user;
     if (!current || !w.serviceType) return;
+    const delivery = DeliveryFormSchema.safeParse(w.delivery);
+    if (!delivery.success) {
+      toast.error(tr('errors.addressRequired'));
+      setStep(4);
+      return;
+    }
     const input = CreateRequestSchema.safeParse({
       details: { ...w.details, serviceType: w.serviceType },
       villageId: w.location.villageId,
-      delivery: w.delivery,
+      delivery: delivery.data,
       phone: w.phone,
     });
     if (!input.success) {
