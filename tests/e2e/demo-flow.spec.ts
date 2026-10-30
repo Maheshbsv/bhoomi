@@ -37,9 +37,11 @@ async function pickLocation(page: Page, names: [string, string, string, string])
   }
 }
 
-async function verifyAndSubmit(page: Page, locale: Locale, phone: string): Promise<string> {
+/** Pass no phone to rely on the prefilled demo citizen number. */
+async function verifyAndSubmit(page: Page, locale: Locale, phone?: string): Promise<string> {
   const w = MESSAGES[locale].wizard;
-  await page.locator("#otp-phone").fill(phone);
+  if (phone) await page.locator("#otp-phone").fill(phone);
+  else await expect(page.locator("#otp-phone")).toHaveValue("9876543210");
   await page.getByRole("button", { name: w.otp.send, exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "123456" })).toBeVisible();
   await page.locator("#otp-code").fill("123456");
@@ -111,9 +113,15 @@ test("citizen orders, operator clarifies and delivers, citizen downloads the PDF
   await page.getByRole("link", { name: number }).click();
   await expect(page).toHaveURL(/admin\/request\/\?id=/);
   const workspaceUrl = page.url();
+  // Submitted: a needs-reply template cannot move the request, so it is disabled and says why.
+  await page.getByRole("tab", { name: "Chat" }).click();
+  await expect(page.getByRole("heading", { name: "WhatsApp thread (simulated)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Multiple entries found for this surname/ })).toBeDisabled();
+  await expect(page.getByText(/Not available at "Submitted"/).first()).toBeVisible();
   await applyStatus(page, "Under review");
   await page.getByRole("tab", { name: "Chat" }).click();
   await page.getByRole("button", { name: /Multiple entries found for this surname/ }).click();
+  await expect(page.getByText("Message sent. Status changed to Action required.").first()).toBeVisible();
   await expect(page.getByRole("tab", { name: "Actions" })).toBeVisible();
 
   // Citizen: banner on the track page, reply
@@ -134,8 +142,9 @@ test("citizen orders, operator clarifies and delivers, citizen downloads the PDF
   await page.getByRole("button", { name: "Generate watermarked PDF" }).click();
   await page.getByRole("button", { name: "Save as final" }).click();
   await expect(page.getByText("Final PDF saved")).toBeVisible();
-  await applyStatus(page, "Document retrieved");
-  await applyStatus(page, "Quality check and watermark");
+  // Saving during the search carries the request through Document retrieved to QC, so Deliver is already offered,
+  // and the status control no longer offers Record unavailable or Action required.
+  await expect(page.getByLabel("Next status").locator("option")).toHaveText(["Choose a status", "Delivered"]);
   await page.getByRole("button", { name: "Deliver", exact: true }).click();
   await expect(page.getByText("Would send via WhatsApp + email (demo)")).toBeVisible();
 
@@ -252,4 +261,52 @@ test("switching delivery from Physical back to Digital still submits", async ({ 
   await page.getByRole("button", { name: "Next", exact: true }).click();
   const number = await verifyAndSubmit(page, "en", "9876543210");
   expect(number).toMatch(NUMBER_RE);
+});
+
+test("demo script: demo citizen prefilled, role switcher out to operator and back shows the new request", async ({ page }) => {
+  const w = MESSAGES.en.wizard;
+  await page.goto("/bhoomi/en/request/?service=LRF_FILE");
+  await pickLocation(page, ["Bengaluru Urban", "Yelahanka", "Jala", "Bagalur"]);
+  await page.getByRole("button", { name: w.next, exact: true }).click();
+  await page.getByLabel(/Form type/).selectOption("FORM_7");
+  await page.getByLabel(/Applicant \/ tenant name/).fill("Role Switch Probe");
+  await page.getByRole("button", { name: w.next, exact: true }).click();
+  await page.getByRole("button", { name: w.upload.skip, exact: true }).click();
+  await page.getByRole("button", { name: w.next, exact: true }).click();
+  await expect(page.getByText(/sample citizen Ramesh Gowda is 9876543210/)).toBeVisible();
+  const number = await verifyAndSubmit(page, "en"); // phone is prefilled; nothing typed
+
+  const controls = page.getByRole("region", { name: "Demo controls" });
+  await controls.getByRole("button", { name: "Operator", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/admin\/$/);
+  await expect(page.locator("#q-search")).toBeVisible();
+
+  await controls.getByRole("button", { name: "Citizen", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/track\/$/);
+  await expect(controls.getByText("Signed in as Ramesh Gowda")).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(number) })).toBeVisible();
+});
+
+test("language toggle keeps the query string on the success page and the operator workspace", async ({ page }) => {
+  const number = await orderLrf(page, "en", "Toggle Query Probe");
+  const toggle = page.getByRole("banner").getByRole("button", { name: /Language/ });
+
+  // Success page: ?id= survives the switch to Kannada and back.
+  await toggle.click();
+  await expect(page).toHaveURL(`http://localhost:4173/bhoomi/kn/request/success/?id=${number}`);
+  await expect(page.getByTestId("request-number")).toHaveText(number);
+  await page.getByRole("banner").getByRole("button", { name: /ಭಾಷೆ/ }).click();
+  await expect(page).toHaveURL(`http://localhost:4173/bhoomi/en/request/success/?id=${number}`);
+  await expect(page.getByTestId("request-number")).toHaveText(number);
+
+  // Operator workspace: the request stays open after the switch.
+  await signInOperator(page, "/bhoomi/en/admin/");
+  await searchQueue(page, number);
+  await page.getByRole("link", { name: number }).click();
+  await expect(page).toHaveURL(/admin\/request\/\?id=/);
+  await expect(page.getByRole("tab", { name: "Actions" })).toBeVisible();
+  await toggle.click();
+  await expect(page).toHaveURL(/\/bhoomi\/kn\/admin\/request\/\?id=/);
+  await expect(page.getByRole("tab", { name: MESSAGES.kn.admin.ws.tabs.actions })).toBeVisible();
+  await expect(page.getByText(MESSAGES.kn.admin.ws.notFoundTitle)).toHaveCount(0);
 });
