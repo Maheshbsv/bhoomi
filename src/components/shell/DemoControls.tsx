@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
 import { useStore } from '@/data/provider';
 import { useSession, useSessionReady } from '@/store/session';
+import { resetDemoData } from './resetDemoData';
 import type { User } from '@/domain/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,9 +19,9 @@ import {
 } from '@/components/ui/dialog';
 
 const ROLES = [
-  { key: 'citizen', match: (u: User) => u.phoneNumber.endsWith('9876543210'), href: '/track/' },
-  { key: 'advocate', match: (u: User) => u.phoneNumber.endsWith('9886001122'), href: '/pro/' },
-  { key: 'operator', match: (u: User) => u.phoneNumber.endsWith('9000000001'), href: '/admin/' },
+  { key: 'citizen', match: (u: User) => u.phoneNumber === '+919876543210', href: '/track/' },
+  { key: 'advocate', match: (u: User) => u.phoneNumber === '+919000000005', href: '/pro/' },
+  { key: 'operator', match: (u: User) => u.phoneNumber === '+919000000001', href: '/admin/' },
 ] as const;
 
 export function DemoControls() {
@@ -48,8 +49,7 @@ export function DemoControls() {
   async function reset() {
     setBusy(true);
     try {
-      await store.reset();
-      signOut();
+      await resetDemoData(store);
       setOpen(false);
       toast.success(t('resetDone'));
       router.push('/');

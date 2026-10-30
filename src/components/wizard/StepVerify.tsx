@@ -10,7 +10,7 @@ import { StoreError } from '@/data/DataStore';
 import { CreateRequestSchema } from '@/domain/schemas';
 import { useSession } from '@/store/session';
 import { useWizard } from '@/store/wizard';
-import { OtpForm } from '@/components/shared/OtpForm';
+import { DEMO_CITIZEN_PHONE, OtpForm } from '@/components/shared/OtpForm';
 import { DeliveryFormSchema } from './deliveryForm';
 import { ReviewSummary } from './ReviewSummary';
 import { StepNav } from './StepNav';
@@ -67,7 +67,7 @@ export function StepVerify() {
           <>
             <p className="text-sm text-muted-foreground">{t('verify.hint')}</p>
             <OtpForm
-              defaultPhone={savedPhone ?? user?.phoneNumber.replace(/^\+91/, '') ?? ''}
+              defaultPhone={savedPhone ?? (user?.role === 'CITIZEN' ? user.phoneNumber.replace(/^\+91/, '') : DEMO_CITIZEN_PHONE)}
               onVerified={(phone) => {
                 patch({ phone });
                 setVerified(true);

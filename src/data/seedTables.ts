@@ -194,9 +194,9 @@ export function buildUsers(now: Date): User[] {
   });
   return [
     u(USER_IDS.ramesh, '9876543210', 'Ramesh Gowda', 'CITIZEN'),
-    u(USER_IDS.lakshmamma, '9845012345', 'Lakshmamma', 'CITIZEN'),
-    u(USER_IDS.imran, '9900112233', 'Syed Imran', 'CITIZEN'),
-    u(USER_IDS.kavya, '9886001122', 'Adv. Kavya Rao', 'ADVOCATE'),
+    u(USER_IDS.lakshmamma, '9000000003', 'Lakshmamma', 'CITIZEN'),
+    u(USER_IDS.imran, '9000000004', 'Syed Imran', 'CITIZEN'),
+    u(USER_IDS.kavya, '9000000005', 'Adv. Kavya Rao', 'ADVOCATE'),
     u(USER_IDS.suma, '9000000001', 'Operator Suma', 'OPERATOR'),
     u(USER_IDS.prakash, '9000000002', 'Operator Prakash', 'OPERATOR'),
   ];

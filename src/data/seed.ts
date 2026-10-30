@@ -74,12 +74,14 @@ const PATHS: Record<OrderStatus, OrderStatus[]> = {
 };
 
 // [status, age in hours]. SLA hours (clock paused in ACTION_REQUIRED) give green/orange/red mixes.
+// Positions 1, 5, 9, ... (index % 4 === 1) belong to the advocate: positions 13 and 17 are delivered and 21 and 25
+// are record-unavailable, so the document vault has four rows and the matter cards show real progress.
 const PLAN: [OrderStatus, number][] = [
   ['SUBMITTED', 3],
   ['SUBMITTED', 20],
   ['SUBMITTED', 70],
-  ['SUBMITTED', 10],
-  ['SUBMITTED', 90],
+  ['ASSIGNED_TO_RUNNER', 90],
+  ['ARCHIVE_SEARCH_IN_PROGRESS', 60],
   ['UNDER_REVIEW', 30],
   ['UNDER_REVIEW', 80],
   ['UNDER_REVIEW', 150],
@@ -88,18 +90,18 @@ const PLAN: [OrderStatus, number][] = [
   ['ACTION_REQUIRED', 40],
   ['CUSTOMER_RESPONDED', 120],
   ['CUSTOMER_RESPONDED', 200],
-  ['ASSIGNED_TO_RUNNER', 90],
+  ['DELIVERED', 330],
   ['ASSIGNED_TO_RUNNER', 250],
   ['ASSIGNED_TO_RUNNER', 36],
   ['ARCHIVE_SEARCH_IN_PROGRESS', 130],
-  ['ARCHIVE_SEARCH_IN_PROGRESS', 60],
+  ['DELIVERED', 190],
   ['ARCHIVE_SEARCH_IN_PROGRESS', 20],
   ['ARCHIVE_SEARCH_IN_PROGRESS', 170],
   ['DOCUMENT_RETRIEVED', 110],
-  ['DOCUMENT_RETRIEVED', 45],
+  ['RECORD_UNAVAILABLE', 260],
   ['QC_WATERMARK_MERGE', 200],
   ['QC_WATERMARK_MERGE', 30],
-  ['RECORD_UNAVAILABLE', 300],
+  ['DOCUMENT_RETRIEVED', 45],
   ['RECORD_UNAVAILABLE', 220],
   ['DELIVERED', 400],
   ['DELIVERED', 260],
@@ -202,7 +204,11 @@ export async function buildSeed(now: Date): Promise<SeedData> {
   const citizens = [USER_IDS.ramesh, USER_IDS.lakshmamma, USER_IDS.imran];
   const ops = [USER_IDS.suma, USER_IDS.prakash];
   const userById = new Map(users.map((u) => [u.id, u]));
-  const advVillages = locations.filter((l) => l.talukEn === 'Devanahalli' || l.talukEn === 'Hoskote');
+  // Alternate the two taluks so the advocate's delivered and unavailable requests (and so the vault) span both matters.
+  const devanahalli = locations.filter((l) => l.talukEn === 'Devanahalli');
+  const hoskote = locations.filter((l) => l.talukEn === 'Hoskote');
+  const advVillage = (slot: number): Location =>
+    slot % 2 === 0 ? devanahalli[(slot / 2) % devanahalli.length] : hoskote[((slot - 1) / 2) % hoskote.length];
 
   // Oldest first so request numbers rise with age.
   const order = PLAN.map((p, idx) => ({ st: p[0], age: p[1], idx })).sort((a, b) => b.age - a.age || a.idx - b.idx);
@@ -216,7 +222,6 @@ export async function buildSeed(now: Date): Promise<SeedData> {
   const blobs: Record<string, Blob> = {};
   let seq = 0;
   const nextSeq = () => ++seq;
-  let advCount = 0;
   let nameCount = 0;
 
   const addDoc = (
@@ -257,9 +262,8 @@ export async function buildSeed(now: Date): Promise<SeedData> {
     let loc: Location;
     let matterTag: string | undefined;
     if (isAdv) {
-      loc = advVillages[advCount % advVillages.length];
+      loc = advVillage((idx - 1) / 4);
       matterTag = MATTERS[loc.talukEn === 'Devanahalli' ? 0 : 1];
-      advCount++;
     } else {
       loc = locations[(idx * 5 + 2) % locations.length];
     }

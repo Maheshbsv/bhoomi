@@ -11,6 +11,8 @@ import { DualLabel } from '@/components/wizard/Field';
 
 /** The demo never sends an SMS; the code is shown on screen. */
 export const DEMO_OTP = '123456';
+/** The seeded demo citizen (Ramesh Gowda); shown and prefilled on every sign-in form. */
+export const DEMO_CITIZEN_PHONE = '9876543210';
 
 interface Props {
   /** Called with the verified 10-digit number after the user has been signed in. */
@@ -18,7 +20,7 @@ interface Props {
   defaultPhone?: string;
 }
 
-export function OtpForm({ onVerified, defaultPhone = '' }: Props) {
+export function OtpForm({ onVerified, defaultPhone = DEMO_CITIZEN_PHONE }: Props) {
   const t = useTranslations('wizard.otp');
   const tr = useTranslations();
   const store = useStore();
@@ -63,6 +65,9 @@ export function OtpForm({ onVerified, defaultPhone = '' }: Props) {
 
   return (
     <div className="space-y-4">
+      <p className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+        {t('demoPhone', { phone: DEMO_CITIZEN_PHONE })}
+      </p>
       <form onSubmit={sendOtp} noValidate className="space-y-1.5">
         <DualLabel name="phone" htmlFor="otp-phone" required />
         <div className="flex gap-2">
