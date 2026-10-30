@@ -310,3 +310,27 @@ test("language toggle keeps the query string on the success page and the operato
   await expect(page.getByRole("tab", { name: MESSAGES.kn.admin.ws.tabs.actions })).toBeVisible();
   await expect(page.getByText(MESSAGES.kn.admin.ws.notFoundTitle)).toHaveCount(0);
 });
+
+test("landing page shows demo controls without opening the store; role switch and Reset start it on click", async ({ page }) => {
+  await page.goto("/bhoomi/en/");
+  const controls = page.getByRole("region", { name: "Demo controls" });
+  await expect(controls.getByRole("button", { name: "Citizen", exact: true })).toBeVisible();
+  await expect(controls.getByText("Not signed in")).toBeVisible();
+  // Give any (unwanted) idle-time start a chance to run, then confirm no database exists yet.
+  await page.waitForTimeout(2000);
+  expect(await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name))).toEqual([]);
+
+  await controls.getByRole("button", { name: "Citizen", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/track\/$/);
+  await expect(controls.getByText("Signed in as Ramesh Gowda")).toBeVisible();
+  expect(await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name))).toContain("hale-dakhale");
+
+  // Reset from a fresh landing load (store not yet started in this page load).
+  await page.goto("/bhoomi/en/");
+  await expect(controls.getByText("Signed in as Ramesh Gowda")).toBeVisible();
+  await controls.getByRole("button", { name: "Reset demo data" }).click();
+  await page.getByRole("button", { name: "Yes, reset" }).click();
+  await expect(page.getByText("Demo data restored")).toBeVisible();
+  await expect(page).toHaveURL(/\/en\/$/);
+  await expect(controls.getByText("Not signed in")).toBeVisible();
+});

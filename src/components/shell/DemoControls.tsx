@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
-import { useStore } from '@/data/provider';
+import { useRequestStore } from '@/data/provider';
 import { useSession, useSessionReady } from '@/store/session';
 import { resetDemoData } from './resetDemoData';
 import type { User } from '@/domain/types';
@@ -26,7 +26,8 @@ const ROLES = [
 
 export function DemoControls() {
   const t = useTranslations('demo');
-  const store = useStore();
+  const tStorage = useTranslations('storage');
+  const requestStore = useRequestStore();
   const router = useRouter();
   const user = useSession((s) => s.user);
   const signIn = useSession((s) => s.signIn);
@@ -36,6 +37,13 @@ export function DemoControls() {
   const [busy, setBusy] = useState(false);
 
   async function switchRole(role: (typeof ROLES)[number]) {
+    let store;
+    try {
+      store = await requestStore();
+    } catch {
+      toast.error(tStorage('unavailable'));
+      return;
+    }
     try {
       const found = (await store.listUsers()).find(role.match);
       if (!found) throw new Error('user not found');
@@ -48,6 +56,14 @@ export function DemoControls() {
 
   async function reset() {
     setBusy(true);
+    let store;
+    try {
+      store = await requestStore();
+    } catch {
+      toast.error(tStorage('unavailable'));
+      setBusy(false);
+      return;
+    }
     try {
       await resetDemoData(store);
       setOpen(false);

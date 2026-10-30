@@ -122,8 +122,12 @@ const OP_NOTES = [
   'Possible duplicate of an earlier request for the same survey; compare before delivery.',
 ];
 
+/** Lets rendering and input run between generated PDFs so seeding never holds the main thread in one lump. */
+const yieldToEventLoop = () => new Promise<void>((r) => setTimeout(r));
+
 /** Small "sample archive page" PDF (Latin script only; standard fonts cannot draw Kannada). */
 async function samplePage(title: string, lines: string[]): Promise<Uint8Array> {
+  await yieldToEventLoop();
   const doc = await PDFDocument.create({ updateMetadata: false });
   const page = doc.addPage([420, 595]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -379,6 +383,7 @@ export async function buildSeed(now: Date): Promise<SeedData> {
         scans.push(bytes);
         addDoc(id, 'OPERATOR_SCAN', `scan-${p}.pdf`, bytes, retrievedAt, operator);
       }
+      await yieldToEventLoop();
       const final = await buildDeliverable(
         scans.map((bytes) => ({ bytes, mimeType: 'application/pdf' })),
         { requestNumber, date: new Date(lastAt) },
