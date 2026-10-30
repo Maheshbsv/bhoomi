@@ -19,6 +19,7 @@ export const FIELD_LABELS = {
   grantOrderNo: { en: 'Grant order No', kn: 'ಮಂಜೂರಾತಿ ಆದೇಶ ಸಂಖ್ಯೆ' },
   saguvaliChitNo: { en: 'Saguvali chit No', kn: 'ಸಾಗುವಳಿ ಚೀಟಿ ಸಂಖ್ಯೆ' },
   grantYear: { en: 'Grant year', kn: 'ಮಂಜೂರಾತಿ ವರ್ಷ' },
+  period: { en: 'Year / period', kn: 'ವರ್ಷ / ಅವಧಿ' },
   formType: { en: 'Form type', kn: 'ನಮೂನೆಯ ಪ್ರಕಾರ' },
   applicantTenantName: { en: 'Applicant / tenant name', kn: 'ಅರ್ಜಿದಾರ / ಗೇಣಿದಾರರ ಹೆಸರು' },
   landlordName: { en: 'Landlord name', kn: 'ಭೂಮಾಲೀಕರ ಹೆಸರು' },
