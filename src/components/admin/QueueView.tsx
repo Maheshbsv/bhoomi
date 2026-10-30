@@ -17,6 +17,7 @@ import {
   filterBySla,
   loadQueueRows,
   parseQueueParams,
+  sanitiseLocationFilter,
   toQueueSearch,
   toStoreFilter,
   visibleRows,
@@ -34,7 +35,10 @@ function Queue() {
   const router = useRouter();
   const params = useSearchParams();
   const locations = useLocations();
-  const state = useMemo(() => parseQueueParams(params), [params]);
+  const state = useMemo(() => {
+    const parsed = parseQueueParams(params);
+    return locations ? sanitiseLocationFilter(parsed, locations) : parsed;
+  }, [params, locations]);
 
   const [rows, setRows] = useState<QueueRow[] | undefined>();
   const [failed, setFailed] = useState(false);
@@ -60,6 +64,8 @@ function Queue() {
   );
 
   useEffect(() => {
+    // Wait for the location master so an unknown district or taluk never reaches the store.
+    if (!locations) return;
     let cancelled = false;
     const filter = JSON.parse(filterKey);
     loadQueueRows(store, filter, new Date())
@@ -74,7 +80,7 @@ function Queue() {
     return () => {
       cancelled = true;
     };
-  }, [store, filterKey, version]);
+  }, [store, locations, filterKey, version]);
 
   // A request submitted in another tab should appear when this one regains focus.
   useEffect(() => {

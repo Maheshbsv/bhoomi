@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyQueueQuery, type QueueRow } from '@/components/admin/queueData';
+import { applyQueueQuery, sanitiseLocationFilter, type QueueRow } from '@/components/admin/queueData';
+import type { Location } from '@/domain/types';
 
 const row = (i: number, slaHours: number, updatedAt: string): QueueRow =>
   ({
@@ -45,5 +46,30 @@ describe('applyQueueQuery', () => {
     const copy = [...rows];
     applyQueueQuery(rows, { sort: 'age', page: 1, pageSize: 20 });
     expect(rows).toEqual(copy);
+  });
+});
+
+describe('sanitiseLocationFilter', () => {
+  const loc = (districtEn: string, talukEn: string) =>
+    ({ districtEn, districtKn: districtEn, talukEn, talukKn: talukEn, isActive: true }) as unknown as Location;
+  const locs = [loc('A', 'A1'), loc('A', 'A2'), loc('B', 'B1')];
+  const base = { sort: 'age' as const, page: 1, closed: false };
+
+  it('drops an unknown district (and its taluk)', () => {
+    const s = sanitiseLocationFilter({ ...base, districtEn: 'Nope', talukEn: 'A1' }, locs);
+    expect(s.districtEn).toBeUndefined();
+    expect(s.talukEn).toBeUndefined();
+  });
+  it('drops a taluk that is not in the district', () => {
+    const s = sanitiseLocationFilter({ ...base, districtEn: 'A', talukEn: 'B1' }, locs);
+    expect(s.districtEn).toBe('A');
+    expect(s.talukEn).toBeUndefined();
+  });
+  it('drops a taluk when there is no district', () => {
+    expect(sanitiseLocationFilter({ ...base, talukEn: 'A1' }, locs).talukEn).toBeUndefined();
+  });
+  it('keeps a valid pair unchanged', () => {
+    const s = { ...base, districtEn: 'A', talukEn: 'A2' };
+    expect(sanitiseLocationFilter(s, locs)).toEqual(s);
   });
 });

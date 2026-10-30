@@ -1,4 +1,5 @@
 import type { DataStore, RequestFilter } from '@/data/DataStore';
+import { districtsOf, taluksOf } from '@/domain/locations';
 import { slaColor, slaHours } from '@/domain/sla';
 import { isTerminal } from '@/domain/status';
 import type { Location, OrderStatus, ServiceRequest, ServiceType } from '@/domain/types';
@@ -127,4 +128,12 @@ export function visibleRows(rows: QueueRow[], s: QueueUrlState): QueueRow[] {
 
 export function filterBySla(rows: QueueRow[], sla?: SlaColor): QueueRow[] {
   return sla ? rows.filter((r) => !isTerminal(r.status) && r.sla === sla) : rows;
+}
+
+/** Drop a district or taluk the location master does not know, so no invisible filter stays active. */
+export function sanitiseLocationFilter(s: QueueUrlState, locations: Location[]): QueueUrlState {
+  const districtEn = s.districtEn && districtsOf(locations).some((d) => d.en === s.districtEn) ? s.districtEn : undefined;
+  const talukEn =
+    districtEn && s.talukEn && taluksOf(locations, districtEn).some((t) => t.en === s.talukEn) ? s.talukEn : undefined;
+  return { ...s, districtEn, talukEn };
 }
