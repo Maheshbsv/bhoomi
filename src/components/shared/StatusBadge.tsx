@@ -16,7 +16,7 @@ const FAMILY: Record<OrderStatus, string> = {
   CANCELLED: 'bg-gray-100 text-gray-600 border-gray-300',
 };
 
-export function StatusBadge({ status, className }: { status: OrderStatus; className?: string }) {
+export function StatusBadge({ status, className, label }: { status: OrderStatus; className?: string; label?: string }) {
   const t = useTranslations('status');
   return (
     <span
@@ -27,7 +27,7 @@ export function StatusBadge({ status, className }: { status: OrderStatus; classN
         className,
       )}
     >
-      {t(status)}
+      {label ?? t(status)}
     </span>
   );
 }

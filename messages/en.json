@@ -97,7 +97,20 @@
     "unavailableBody": "After searching the archive, this record was not found. The attached certificate explains the search that was done. You can download it below.",
     "cancelledTitle": "This request was cancelled",
     "cancelledBody": "No further work will be done on this request.",
-    "loading": "Loading your request"
+    "loading": "Loading your request",
+    "note": {
+      "submitted": "Request submitted",
+      "customerReplied": "You replied",
+      "notFound": "Not found in the taluk record room; an endorsement certificate is attached",
+      "cancelled": "Cancelled at your request"
+    },
+    "status": {
+      "ACTION_REQUIRED": "Your reply is needed",
+      "CUSTOMER_RESPONDED": "Reply received, under review",
+      "ASSIGNED_TO_RUNNER": "Search being arranged",
+      "DOCUMENT_RETRIEVED": "Record found",
+      "QC_WATERMARK_MERGE": "Preparing your document"
+    }
   },
   "sla": {
     "green": "SLA: green",

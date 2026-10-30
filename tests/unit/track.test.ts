@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bannerMessage, customerDocuments, resolveTrackId } from '@/domain/track';
+import { bannerMessage, citizenNote, customerDocuments, resolveTrackId } from '@/domain/track';
 import type { RequestDocument, RequestMessage } from '@/domain/types';
 
 const m = (o: Partial<RequestMessage> & { id: string; direction: RequestMessage['direction']; createdAt: string }): RequestMessage => ({
@@ -69,5 +69,24 @@ describe('resolveTrackId', () => {
   it('returns null for blank or invalid', () => {
     expect(resolveTrackId(null)).toBeNull();
     expect(resolveTrackId('nope')).toBeNull();
+  });
+});
+
+describe('citizenNote', () => {
+  it('maps a template key to the template', () => {
+    expect(citizenNote('REQUEST_CLEARER_PHOTO')).toEqual({ kind: 'template', key: 'REQUEST_CLEARER_PHOTO' });
+    expect(citizenNote('SURVEY_VILLAGE_MISMATCH')).toEqual({ kind: 'template', key: 'SURVEY_VILLAGE_MISMATCH' });
+  });
+  it('maps the known system strings', () => {
+    expect(citizenNote('Request submitted')).toEqual({ kind: 'system', key: 'submitted' });
+    expect(citizenNote('Customer replied')).toEqual({ kind: 'system', key: 'customerReplied' });
+    expect(citizenNote('Not found in taluk record room; endorsement certificate attached')).toEqual({ kind: 'system', key: 'notFound' });
+    expect(citizenNote("Cancelled at the citizen's request")).toEqual({ kind: 'system', key: 'cancelled' });
+  });
+  it('hides runner and operator free-text notes', () => {
+    expect(citizenNote('Assigned to Manjunath')).toBeNull();
+    expect(citizenNote('Spoke to the tahsildar, volume 3 is damaged')).toBeNull();
+    expect(citizenNote(undefined)).toBeNull();
+    expect(citizenNote('')).toBeNull();
   });
 });

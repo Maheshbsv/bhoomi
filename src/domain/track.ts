@@ -1,5 +1,5 @@
 import { normalizeRequestNumber } from './requestNumber';
-import { CLARIFICATION_TEMPLATES } from './templates';
+import { CLARIFICATION_TEMPLATES, type TemplateKey } from './templates';
 import type { RequestDocument, RequestMessage } from './types';
 
 /** Normalised request number from the `?id=` value, or null when blank/invalid. */
@@ -25,4 +25,28 @@ export function bannerMessage(messages: RequestMessage[]): RequestMessage | null
 /** Documents the citizen may download. Operator scans and customer references stay hidden. */
 export function customerDocuments(docs: RequestDocument[]): RequestDocument[] {
   return docs.filter((d) => d.fileType === 'FINAL_DELIVERABLE' || d.fileType === 'ENDORSEMENT_CERTIFICATE');
+}
+
+export type CitizenNote =
+  | { kind: 'template'; key: TemplateKey }
+  | { kind: 'system'; key: 'submitted' | 'customerReplied' | 'notFound' | 'cancelled' };
+
+const SYSTEM_NOTES: Record<string, 'submitted' | 'customerReplied' | 'notFound' | 'cancelled'> = {
+  'Request submitted': 'submitted',
+  'Customer replied': 'customerReplied',
+  'Not found in taluk record room; endorsement certificate attached': 'notFound',
+  "Cancelled at the citizen's request": 'cancelled',
+};
+
+/**
+ * Timeline notes are stored as English text written by the system or by operators. Only known
+ * template keys and known system strings are shown to citizens; anything else (runner names,
+ * operator free text) is hidden.
+ */
+export function citizenNote(note: string | undefined): CitizenNote | null {
+  if (!note) return null;
+  const tpl = CLARIFICATION_TEMPLATES.find((t) => t.key === note);
+  if (tpl) return { kind: 'template', key: tpl.key };
+  const sys = Object.prototype.hasOwnProperty.call(SYSTEM_NOTES, note) ? SYSTEM_NOTES[note] : undefined;
+  return sys ? { kind: 'system', key: sys } : null;
 }

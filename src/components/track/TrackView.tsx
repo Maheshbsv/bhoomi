@@ -20,6 +20,7 @@ import { MyRequests } from './MyRequests';
 import { ReplyBox } from './ReplyBox';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
+import { useCitizenStatus } from './useCitizenStatus';
 import { TrackLookup } from './TrackLookup';
 
 function Skeleton({ label }: { label: string }) {
@@ -81,6 +82,7 @@ function Detail({ number }: { number: string }) {
   const t = useTranslations('track');
   const tr = useTranslations();
   const store = useStore();
+  const statusLabel = useCitizenStatus();
   const [detail, setDetail] = useState<RequestDetail | null | undefined>();
 
   const [version, setVersion] = useState(0);
@@ -110,7 +112,7 @@ function Detail({ number }: { number: string }) {
       <section className="space-y-1 rounded-xl border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-mono text-base font-semibold break-all">{request.requestNumber}</p>
-          <StatusBadge status={request.status} />
+          <StatusBadge status={request.status} label={statusLabel(request.status)} />
         </div>
         <p className="text-sm font-medium">{tr(`services.${request.serviceType}.name`)}</p>
         <p className="text-sm text-muted-foreground">

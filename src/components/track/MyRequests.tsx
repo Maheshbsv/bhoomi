@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing';
 import { useStore } from '@/data/provider';
 import type { ServiceRequest } from '@/domain/types';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { useCitizenStatus } from './useCitizenStatus';
 import { formatWhen } from './Timeline';
 
 export function MyRequests({ userId }: { userId: string }) {
@@ -13,6 +14,7 @@ export function MyRequests({ userId }: { userId: string }) {
   const tr = useTranslations();
   const locale = useLocale();
   const store = useStore();
+  const statusLabel = useCitizenStatus();
   const [list, setList] = useState<ServiceRequest[]>();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function MyRequests({ userId }: { userId: string }) {
           >
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-sm font-semibold">{r.requestNumber}</span>
-              <StatusBadge status={r.status} />
+              <StatusBadge status={r.status} label={statusLabel(r.status)} />
             </span>
             <span className="text-sm">{tr(`services.${r.serviceType}.name`)}</span>
             <span className="text-xs text-muted-foreground">{formatWhen(r.createdAt, locale)}</span>
