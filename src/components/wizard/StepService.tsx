@@ -2,13 +2,12 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2 } from 'lucide-react';
+import { SERVICE_NAMES } from '@/domain/serviceNames';
 import { SERVICE_CATALOG } from '@/domain/services';
 import type { ServiceType } from '@/domain/types';
 import { useWizard } from '@/store/wizard';
 import { cn } from '@/lib/utils';
 import { StepNav } from './StepNav';
-import en from '../../../messages/en.json';
-import kn from '../../../messages/kn.json';
 
 const SERVICES = Object.keys(SERVICE_CATALOG) as ServiceType[];
 
@@ -31,7 +30,7 @@ export function StepService() {
       <div role="radiogroup" aria-label={t('wizard.service.heading')} className="mt-4 space-y-3">
         {SERVICES.map((type) => {
           const selected = type === serviceType;
-          const other = (locale === 'kn' ? en : kn).services[type].name;
+          const other = SERVICE_NAMES[type][locale === 'kn' ? 'en' : 'kn'];
           const [min, max] = SERVICE_CATALOG[type].typicalDays;
           return (
             <button

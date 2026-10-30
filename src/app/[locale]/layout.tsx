@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { StoreProvider } from "@/data/provider";
+import { StoreGate, StoreProvider } from "@/data/provider";
 import { Header } from "@/components/shell/Header";
 import { DemoControls } from "@/components/shell/DemoControls";
 import { SessionHydrator } from "@/components/shell/SessionHydrator";
@@ -59,7 +59,9 @@ export default async function LocaleLayout({
           <StoreProvider>
             <main className="flex-1">{children}</main>
             <footer className="border-t bg-muted/50 print:hidden">
-              <DemoControls />
+              <StoreGate fallback={null}>
+                <DemoControls />
+              </StoreGate>
             </footer>
           </StoreProvider>
           <Toaster theme="light" />

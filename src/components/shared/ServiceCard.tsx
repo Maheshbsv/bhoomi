@@ -1,17 +1,16 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { SERVICE_NAMES } from '@/domain/serviceNames';
 import { SERVICE_CATALOG } from '@/domain/services';
 import type { ServiceType } from '@/domain/types';
-import en from '../../../messages/en.json';
-import kn from '../../../messages/kn.json';
 
 export function ServiceCard({ type }: { type: ServiceType }) {
   const t = useTranslations();
   const locale = useLocale();
   const [min, max] = SERVICE_CATALOG[type].typicalDays;
   // Both languages are always shown; the active locale's name leads.
-  const other = (locale === 'kn' ? en : kn).services[type].name;
+  const other = SERVICE_NAMES[type][locale === 'kn' ? 'en' : 'kn'];
   return (
     <Link
       href={`/request/?service=${type}`}

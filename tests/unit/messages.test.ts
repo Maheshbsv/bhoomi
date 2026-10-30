@@ -31,3 +31,14 @@ describe('messages', () => {
     }
   });
 });
+
+import { SERVICE_NAMES } from '@/domain/serviceNames';
+
+describe('SERVICE_NAMES', () => {
+  it('matches both message catalogs', () => {
+    for (const [k, v] of Object.entries(SERVICE_NAMES)) {
+      expect(v.en).toBe((en.services as Record<string, { name: string }>)[k].name);
+      expect(v.kn).toBe((kn.services as Record<string, { name: string }>)[k].name);
+    }
+  });
+});
