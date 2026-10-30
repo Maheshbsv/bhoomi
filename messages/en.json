@@ -110,7 +110,8 @@
       "ASSIGNED_TO_RUNNER": "Search being arranged",
       "DOCUMENT_RETRIEVED": "Record found",
       "QC_WATERMARK_MERGE": "Preparing your document"
-    }
+    },
+    "actionGeneric": "Our team needs more information about your request. Please reply below."
   },
   "sla": {
     "green": "SLA: green",
@@ -251,6 +252,7 @@
     "otp": {
       "send": "Send OTP",
       "resend": "Resend",
+      "demoPhone": "Demo: sample citizen Ramesh Gowda is {phone}. Any 10-digit number works.",
       "demoOtp": "Demo OTP: {otp}",
       "wrong": "That code is not correct. Try again.",
       "verify": "Verify"
@@ -450,7 +452,7 @@
         "system": "System"
       },
       "thread": {
-        "title": "WhatsApp thread",
+        "title": "WhatsApp thread (simulated)",
         "empty": "No messages yet.",
         "needsReply": "needs reply",
         "info": "info",
@@ -468,7 +470,17 @@
         "simText": "Reply text",
         "simFile": "Photo or PDF (optional)",
         "simSend": "Send as customer",
-        "simEmpty": "Write a reply or attach a file first"
+        "simEmpty": "Write a reply or attach a file first",
+        "freeBadge": "free text, not on tracking page",
+        "effectMoves": "Needs reply. Moves the request to Action required.",
+        "effectStays": "Needs reply. Status stays Action required and the customer sees this question.",
+        "effectInfo": "Information only. Status does not change.",
+        "effectBlocked": "Needs reply. Not available at \"{status}\": the request cannot move to Action required from here.",
+        "freeHint": "Free text stays in this thread. It does not change the status and does not appear on the customer's tracking page. To ask the customer something, use a quick message above.",
+        "sentMoved": "Message sent. Status changed to Action required.",
+        "sentStays": "Message sent. Status stays Action required; the customer sees this question.",
+        "sentInfo": "Message sent. Status not changed.",
+        "sentFree": "Message added to this thread only. Status not changed and the customer's tracking page is not updated."
       }
     },
     "runSheetsLink": "Run sheets",
@@ -570,6 +582,7 @@
       "useNumbers": "Use numbers",
       "periodHint": "A year (1990) or a range (1975-1982)",
       "submit": "Create {count, plural, one {# request} other {# requests}}",
+      "submitNone": "Create requests",
       "submitting": "Creating requests",
       "noRows": "Add at least one row with a survey number.",
       "fixErrors": "Fix the highlighted rows before submitting.",
