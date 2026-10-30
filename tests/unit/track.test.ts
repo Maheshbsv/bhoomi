@@ -36,12 +36,13 @@ describe('bannerMessage', () => {
     ];
     expect(bannerMessage(msgs)?.id).toBe('1');
   });
-  it('counts free-text outbound as needing a reply, regardless of input order', () => {
+  it('never uses operator free text: citizens only see templates', () => {
     const msgs = [
+      m({ id: '1', direction: 'OUTBOUND', templateKey: 'SURVEY_VILLAGE_MISMATCH', createdAt: '2026-01-01' }),
       m({ id: '2', direction: 'OUTBOUND', body: 'Please send father name', createdAt: '2026-01-03' }),
-      m({ id: '1', direction: 'OUTBOUND', templateKey: 'RECORD_BRITTLE_SEARCH_ONGOING', createdAt: '2026-01-04' }),
     ];
-    expect(bannerMessage(msgs)?.id).toBe('2');
+    expect(bannerMessage(msgs)?.id).toBe('1');
+    expect(bannerMessage([msgs[1]])).toBeNull();
   });
   it('returns null when only informational messages exist', () => {
     expect(

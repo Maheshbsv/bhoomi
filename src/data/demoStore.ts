@@ -9,7 +9,7 @@ import type { SeedData } from './seed';
 import { CreateRequestSchema } from '@/domain/schemas';
 import { periodLabel, toServiceMetadata } from '@/domain/schemas';
 import { formatRequestNumber, normalizeRequestNumber } from '@/domain/requestNumber';
-import { canTransition, isTerminal } from '@/domain/status';
+import { canTransition, isTerminal, messageMovesToActionRequired } from '@/domain/status';
 import { slaColor, slaHours } from '@/domain/sla';
 import { CLARIFICATION_TEMPLATES } from '@/domain/templates';
 import type {
@@ -69,7 +69,6 @@ async function openKv(forceMemory: boolean): Promise<{ kv: KV; persistent: boole
 
 const nowIso = () => new Date().toISOString();
 const uuid = () => crypto.randomUUID();
-const NEEDS_REPLY_FROM: OrderStatus[] = ['UNDER_REVIEW', 'CUSTOMER_RESPONDED', 'ARCHIVE_SEARCH_IN_PROGRESS'];
 
 export async function createDemoStore(opts: { now?: Date; memory?: boolean } = {}): Promise<DataStore> {
   const { kv, persistent } = await openKv(opts.memory === true);
@@ -164,10 +163,11 @@ export async function createDemoStore(opts: { now?: Date; memory?: boolean } = {
     return doc;
   }
 
-  function matchesQuery(r: ServiceRequest, q: string): boolean {
+  /** `customerName` is the ordering user's name, so the queue's "name" search finds customers as well as applicants. */
+  function matchesQuery(r: ServiceRequest, q: string, customerName?: string): boolean {
     const needle = q.trim().toLowerCase();
     if (!needle) return true;
-    const hay = [r.requestNumber, r.surveyNo, r.hissaNo, ...Object.values(r.serviceMetadata)].filter(
+    const hay = [r.requestNumber, r.surveyNo, r.hissaNo, customerName, ...Object.values(r.serviceMetadata)].filter(
       (v): v is string => typeof v === 'string',
     );
     return hay.some((v) => v.toLowerCase().includes(needle));
@@ -203,9 +203,13 @@ export async function createDemoStore(opts: { now?: Date; memory?: boolean } = {
       }
       if (filter.serviceType) list = list.filter((r) => r.serviceType === filter.serviceType);
       if (filter.status) list = list.filter((r) => r.status === filter.status);
-      if (filter.userId) list = list.filter((r) => r.userId === filter.userId);
+      // An empty id means "nobody", never "everybody".
+      if (filter.userId !== undefined) list = list.filter((r) => r.userId === filter.userId);
       if (filter.matterTag) list = list.filter((r) => r.matterTag === filter.matterTag);
-      if (filter.q) list = list.filter((r) => matchesQuery(r, filter.q!));
+      if (filter.q) {
+        const names = new Map((await load<User>('users')).map((u) => [u.id, u.fullName]));
+        list = list.filter((r) => matchesQuery(r, filter.q!, names.get(r.userId)));
+      }
       if (filter.sla) {
         const tl = await load<TimelineEntry>('timeline');
         const by = new Map<string, TimelineEntry[]>();
@@ -346,7 +350,7 @@ export async function createDemoStore(opts: { now?: Date; memory?: boolean } = {
           createdAt: nowIso(),
         };
         await pushTo('messages', message);
-        if (tpl?.needsReply && NEEDS_REPLY_FROM.includes(req.status)) {
+        if (tpl?.needsReply && messageMovesToActionRequired(req.status)) {
           await logTransition(req, req.status, 'ACTION_REQUIRED', actorId, tpl.key);
           await saveRequest(all, req);
         }

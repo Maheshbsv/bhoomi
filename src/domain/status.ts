@@ -48,3 +48,8 @@ export function citizenStage(s: OrderStatus): 0 | 1 | 2 | 3 | 4 | 'closed' {
       return 'closed';
   }
 }
+
+/** Sending a needs-reply template moves the request to ACTION_REQUIRED only from statuses that allow it. */
+export function messageMovesToActionRequired(from: OrderStatus): boolean {
+  return canTransition(from, 'ACTION_REQUIRED');
+}

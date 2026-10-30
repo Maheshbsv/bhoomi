@@ -9,12 +9,12 @@ export function resolveTrackId(raw: string | null | undefined): string | null {
 
 function needsReply(m: RequestMessage): boolean {
   if (m.direction !== 'OUTBOUND') return false;
-  if (!m.templateKey) return true; // free text expects an answer
+  if (!m.templateKey) return false; // free text stays in the operator's thread; citizens only ever see templates
   const t = CLARIFICATION_TEMPLATES.find((x) => x.key === m.templateKey);
   return t ? t.needsReply : true;
 }
 
-/** Latest OUTBOUND message that asks the customer something; informational ones are skipped. */
+/** Latest OUTBOUND template that asks the customer something; informational templates and free text are skipped. */
 export function bannerMessage(messages: RequestMessage[]): RequestMessage | null {
   const sorted = messages
     .filter(needsReply)

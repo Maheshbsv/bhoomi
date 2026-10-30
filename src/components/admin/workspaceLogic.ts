@@ -1,4 +1,5 @@
 import { citizenNote } from '@/domain/track';
+import { messageMovesToActionRequired, operatorNextStatuses } from '@/domain/status';
 import type { TemplateKey } from '@/domain/templates';
 import type { DeliveryMode, OrderStatus } from '@/domain/types';
 
@@ -57,4 +58,33 @@ export function operatorNote(note: string | undefined): OperatorNote | null {
 /** Identifies the ordered set of scans a PDF was built from. */
 export function scanSignature(scanIds: string[]): string {
   return JSON.stringify(scanIds);
+}
+
+export type SendOutcome = 'moved' | 'stays' | 'info' | 'free' | 'blocked';
+
+/**
+ * What sending a message does. `template` is null for free text.
+ * 'blocked' means a needs-reply template that cannot move this status to ACTION_REQUIRED (the UI disables it).
+ */
+export function sendOutcome(status: OrderStatus, template: { needsReply: boolean } | null): SendOutcome {
+  if (!template) return 'free';
+  if (!template.needsReply) return 'info';
+  if (status === 'ACTION_REQUIRED') return 'stays';
+  return messageMovesToActionRequired(status) ? 'moved' : 'blocked';
+}
+
+const QC_WALK: Partial<Record<OrderStatus, OrderStatus[]>> = {
+  ARCHIVE_SEARCH_IN_PROGRESS: ['DOCUMENT_RETRIEVED', 'QC_WATERMARK_MERGE'],
+  DOCUMENT_RETRIEVED: ['QC_WATERMARK_MERGE'],
+};
+
+/** Transitions to apply, in order, after a final PDF is saved so the request reaches QC_WATERMARK_MERGE. */
+export function statusesAfterSavingFinal(status: OrderStatus): OrderStatus[] {
+  return QC_WALK[status] ?? [];
+}
+
+/** Statuses the operator may choose. Once a final PDF exists the record exists, so no "unavailable" or "action required". */
+export function statusOptions(status: OrderStatus, hasFinal: boolean): OrderStatus[] {
+  const all = operatorNextStatuses(status);
+  return hasFinal ? all.filter((s) => s !== 'RECORD_UNAVAILABLE' && s !== 'ACTION_REQUIRED') : all;
 }

@@ -9,6 +9,9 @@ import {
   reconcileOrder,
   scanOrderAfterMove,
   scanSignature,
+  sendOutcome,
+  statusesAfterSavingFinal,
+  statusOptions,
   PDF_LIMIT_BYTES,
 } from '@/components/admin/workspaceLogic';
 
@@ -87,5 +90,49 @@ describe('scanSignature', () => {
     expect(scanSignature(['a', 'b'])).toBe(scanSignature(['a', 'b']));
     expect(scanSignature(['a', 'b'])).not.toBe(scanSignature(['b', 'a']));
     expect(scanSignature(['a', 'b'])).not.toBe(scanSignature(['a', 'b', 'c']));
+  });
+});
+
+describe('sendOutcome', () => {
+  const needs = { needsReply: true };
+  const info = { needsReply: false };
+  it('free text never changes status', () => {
+    expect(sendOutcome('UNDER_REVIEW', null)).toBe('free');
+  });
+  it('informational templates never change status', () => {
+    expect(sendOutcome('UNDER_REVIEW', info)).toBe('info');
+  });
+  it('needs-reply templates move to Action required where the state machine allows it', () => {
+    for (const s of ['UNDER_REVIEW', 'CUSTOMER_RESPONDED', 'ARCHIVE_SEARCH_IN_PROGRESS'] as const) {
+      expect(sendOutcome(s, needs), s).toBe('moved');
+    }
+    expect(sendOutcome('ACTION_REQUIRED', needs)).toBe('stays');
+  });
+  it('needs-reply templates are blocked everywhere else', () => {
+    for (const s of ['SUBMITTED', 'ASSIGNED_TO_RUNNER', 'DOCUMENT_RETRIEVED', 'QC_WATERMARK_MERGE'] as const) {
+      expect(sendOutcome(s, needs), s).toBe('blocked');
+    }
+  });
+});
+
+describe('statusesAfterSavingFinal', () => {
+  it('walks the search through retrieved to QC', () => {
+    expect(statusesAfterSavingFinal('ARCHIVE_SEARCH_IN_PROGRESS')).toEqual(['DOCUMENT_RETRIEVED', 'QC_WATERMARK_MERGE']);
+    expect(statusesAfterSavingFinal('DOCUMENT_RETRIEVED')).toEqual(['QC_WATERMARK_MERGE']);
+    expect(statusesAfterSavingFinal('QC_WATERMARK_MERGE')).toEqual([]);
+  });
+});
+
+describe('statusOptions', () => {
+  it('offers unavailable and action required before a final exists', () => {
+    expect(statusOptions('ARCHIVE_SEARCH_IN_PROGRESS', false)).toEqual(
+      expect.arrayContaining(['RECORD_UNAVAILABLE', 'ACTION_REQUIRED', 'DOCUMENT_RETRIEVED']),
+    );
+  });
+  it('drops them once a final exists', () => {
+    const o = statusOptions('ARCHIVE_SEARCH_IN_PROGRESS', true);
+    expect(o).not.toContain('RECORD_UNAVAILABLE');
+    expect(o).not.toContain('ACTION_REQUIRED');
+    expect(o).toContain('DOCUMENT_RETRIEVED');
   });
 });

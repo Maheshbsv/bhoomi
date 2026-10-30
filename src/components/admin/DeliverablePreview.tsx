@@ -9,7 +9,15 @@ import type { RequestDocument } from '@/domain/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PDF_LIMIT_BYTES, canDeliver, canGenerate, canUploadScan, needsConsignment, scanSignature } from './workspaceLogic';
+import {
+  PDF_LIMIT_BYTES,
+  canDeliver,
+  canGenerate,
+  canUploadScan,
+  needsConsignment,
+  scanSignature,
+  statusesAfterSavingFinal,
+} from './workspaceLogic';
 import { OpenLink } from './OpenLink';
 import { useBlobUrl } from './useBlobUrl';
 import type { Workspace } from './useWorkspace';
@@ -99,8 +107,9 @@ export function DeliverablePreview({ ws, scans }: { ws: Workspace; scans: Reques
         fileName: `${request.requestNumber}.pdf`,
         uploadedById: ws.actorId,
       });
-      if (request.status === 'DOCUMENT_RETRIEVED') {
-        await store.transition(request.id, 'QC_WATERMARK_MERGE', { actorId: ws.actorId });
+      // Saving the final is the end of the search and the QC step: walk the normal transitions so the timeline is right.
+      for (const to of statusesAfterSavingFinal(request.status)) {
+        await store.transition(request.id, to, { actorId: ws.actorId });
       }
     });
     if (ok) replaceGen(null);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import { useLocale, useTranslations } from 'next-intl';
 import { useStore } from '@/data/provider';
 import { CLARIFICATION_TEMPLATES } from '@/domain/templates';
@@ -14,6 +15,7 @@ import { formatWhen } from '@/components/track/Timeline';
 import { OpenLink } from './OpenLink';
 import { SimulateReply } from './SimulateReply';
 import { useBlobUrl } from './useBlobUrl';
+import { sendOutcome, type SendOutcome } from './workspaceLogic';
 import type { Workspace } from './useWorkspace';
 
 function Media({ mediaKey, documents }: { mediaKey: string; documents: RequestDocument[] }) {
@@ -42,7 +44,7 @@ function Bubble({ m, ws }: { m: RequestMessage; ws: Workspace }) {
   const locale = useLocale();
   const out = m.direction === 'OUTBOUND';
   const template = m.templateKey ? CLARIFICATION_TEMPLATES.find((x) => x.key === m.templateKey) : undefined;
-  const needsReply = out && (template ? template.needsReply : true);
+  const needsReply = out && !!template?.needsReply;
   return (
     <li className={cn('flex', out ? 'justify-end' : 'justify-start')}>
       <div
@@ -60,7 +62,7 @@ function Bubble({ m, ws }: { m: RequestMessage; ws: Workspace }) {
           <time dateTime={m.createdAt}>{formatWhen(m.createdAt, locale)}</time>
           {out && (
             <span className={cn('rounded-full border px-1.5', needsReply ? 'border-amber-300 bg-amber-100 text-amber-900' : 'border-border bg-muted')}>
-              {needsReply ? t('needsReply') : t('info')}
+              {needsReply ? t('needsReply') : template ? t('info') : t('freeBadge')}
             </span>
           )}
         </p>
@@ -72,6 +74,7 @@ function Bubble({ m, ws }: { m: RequestMessage; ws: Workspace }) {
 export function WhatsAppThread({ ws }: { ws: Workspace }) {
   const t = useTranslations('admin.ws.thread');
   const tpl = useTranslations('templates');
+  const ts = useTranslations('status');
   const store = useStore();
   const id = useId();
   const [body, setBody] = useState('');
@@ -79,8 +82,18 @@ export function WhatsAppThread({ ws }: { ws: Workspace }) {
   const closed = isTerminal(request.status);
   const sorted = [...messages].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  async function sendTemplate(key: (typeof CLARIFICATION_TEMPLATES)[number]['key']) {
-    await ws.run(() => store.sendMessage(request.id, { templateKey: key }, ws.actorId));
+  const SENT: Record<Exclude<SendOutcome, 'blocked'>, string> = {
+    moved: t('sentMoved'),
+    stays: t('sentStays'),
+    info: t('sentInfo'),
+    free: t('sentFree'),
+  };
+
+  async function sendTemplate(x: (typeof CLARIFICATION_TEMPLATES)[number]) {
+    const outcome = sendOutcome(request.status, x);
+    if (outcome === 'blocked') return;
+    const ok = await ws.run(() => store.sendMessage(request.id, { templateKey: x.key }, ws.actorId));
+    if (ok) toast.success(SENT[outcome]);
   }
 
   async function sendFree(e: FormEvent) {
@@ -88,7 +101,10 @@ export function WhatsAppThread({ ws }: { ws: Workspace }) {
     const text = body.trim();
     if (!text) return;
     const ok = await ws.run(() => store.sendMessage(request.id, { body: text }, ws.actorId));
-    if (ok) setBody('');
+    if (ok) {
+      setBody('');
+      toast.success(SENT.free);
+    }
   }
 
   return (
@@ -109,22 +125,38 @@ export function WhatsAppThread({ ws }: { ws: Workspace }) {
         <>
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">{t('templates')}</h3>
-            {CLARIFICATION_TEMPLATES.map((x) => (
-              <Button
-                key={x.key}
-                type="button"
-                variant="outline"
-                disabled={ws.pending}
-                onClick={() => void sendTemplate(x.key)}
-                className="h-auto min-h-11 w-full flex-col items-start gap-1 py-2 text-left whitespace-normal"
-              >
-                <span>{tpl(x.key)}</span>
-                <span className="text-xs text-muted-foreground">{x.needsReply ? t('needsReply') : t('info')}</span>
-              </Button>
-            ))}
+            {CLARIFICATION_TEMPLATES.map((x) => {
+              const outcome = sendOutcome(request.status, x);
+              const effect =
+                outcome === 'blocked'
+                  ? t('effectBlocked', { status: ts(request.status) })
+                  : outcome === 'moved'
+                    ? t('effectMoves')
+                    : outcome === 'stays'
+                      ? t('effectStays')
+                      : t('effectInfo');
+              return (
+                <div key={x.key}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={ws.pending || outcome === 'blocked'}
+                    aria-describedby={`${id}-${x.key}`}
+                    onClick={() => void sendTemplate(x)}
+                    className="h-auto min-h-11 w-full justify-start py-2 text-left whitespace-normal"
+                  >
+                    {tpl(x.key)}
+                  </Button>
+                  <p id={`${id}-${x.key}`} className={cn('mt-1 px-1 text-xs', outcome === 'blocked' ? 'text-destructive' : 'text-muted-foreground')}>
+                    {effect}
+                  </p>
+                </div>
+              );
+            })}
           </div>
           <form onSubmit={(e) => void sendFree(e)} className="space-y-2">
             <Label htmlFor={id}>{t('body')}</Label>
+            <p className="text-xs text-muted-foreground">{t('freeHint')}</p>
             <Textarea id={id} value={body} onChange={(e) => setBody(e.target.value)} rows={2} placeholder={t('bodyPlaceholder')} disabled={ws.pending} className="bg-background" />
             <Button type="submit" className="min-h-11 w-full" disabled={ws.pending || !body.trim()}>
               {t('send')}
@@ -132,7 +164,7 @@ export function WhatsAppThread({ ws }: { ws: Workspace }) {
           </form>
         </>
       )}
-      <SimulateReply ws={ws} />
+      {!closed && <SimulateReply ws={ws} />}
     </section>
   );
 }

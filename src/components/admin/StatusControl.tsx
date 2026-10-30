@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useStore } from '@/data/provider';
-import { isTerminal, operatorNextStatuses } from '@/domain/status';
+import { isTerminal } from '@/domain/status';
 import { validateUpload } from '@/domain/uploads';
 import type { OrderStatus } from '@/domain/types';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { needsConsignment } from './workspaceLogic';
+import { needsConsignment, statusOptions } from './workspaceLogic';
 import { RunnerAssign } from './RunnerAssign';
 import type { Workspace } from './useWorkspace';
 
@@ -25,10 +25,12 @@ export function StatusControl({ ws }: { ws: Workspace }) {
   const tc = useTranslations('admin.ws.consignment');
   const ts = useTranslations('status');
   const tu = useTranslations('wizard.upload');
+  const tp = useTranslations('admin.ws.pdf');
   const store = useStore();
   const id = useId();
   const { request, documents } = ws.detail;
-  const options = operatorNextStatuses(request.status);
+  const hasFinal = documents.some((d) => d.fileType === 'FINAL_DELIVERABLE');
+  const options = statusOptions(request.status, hasFinal);
 
   const [pick, setTo] = useState<OrderStatus | ''>('');
   const [note, setNote] = useState('');
@@ -86,7 +88,8 @@ export function StatusControl({ ws }: { ws: Workspace }) {
       });
     });
     if (ok) {
-      toast.success(t('changed'));
+      // Same "would send" message as the Deliver button.
+      toast.success(target === 'DELIVERED' ? tp('deliverToast') : t('changed'));
       setTo('');
       setNote('');
       setRunner('');
