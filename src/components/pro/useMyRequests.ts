@@ -9,6 +9,7 @@ export function useMyRequests(userId: string): { list?: ServiceRequest[]; failed
   const store = useStore();
   const [state, setState] = useState<{ userId: string; list?: ServiceRequest[]; failed: boolean }>();
   useEffect(() => {
+    if (!userId) return; // no signed-in user: nothing to list
     let cancelled = false;
     store
       .listRequests({ userId })
@@ -18,5 +19,6 @@ export function useMyRequests(userId: string): { list?: ServiceRequest[]; failed
       cancelled = true;
     };
   }, [store, userId]);
+  if (!userId) return { list: [], failed: false };
   return state && state.userId === userId ? state : { failed: false };
 }

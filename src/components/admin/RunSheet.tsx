@@ -13,7 +13,9 @@ import { AdminGate } from './AdminGate';
 import { loadQueueRows, type QueueRow } from './queueData';
 import {
   RUN_STATUSES,
+  isoDate,
   keyNames,
+  parseIsoDate,
   parseRunSheetParams,
   runSheetRows,
   runnerNames,
@@ -143,7 +145,13 @@ function Sheet() {
   const slips = useMemo(() => (rows ? runSheetRows(rows, state) : []), [rows, state]);
   const failed = chosenKey !== '' && failedKey === chosenKey;
   const name = (p: { en: string; kn: string }) => (kn ? p.kn : p.en);
-  const today = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date()), [locale]);
+  // The date is a printed label only (it does not filter requests); empty means today.
+  const todayIso = useMemo(() => isoDate(new Date()), []);
+  const sheetDate = state.date ?? todayIso;
+  const today = useMemo(
+    () => new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(parseIsoDate(sheetDate) ?? new Date()),
+    [locale, sheetDate],
+  );
 
   return (
     <div className="run-sheet mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
@@ -200,6 +208,15 @@ function Sheet() {
                 </option>
               ))}
             </select>
+          </Field>
+          <Field id="rs-date" label={t('rs.date')}>
+            <input
+              id="rs-date"
+              type="date"
+              className={SELECT}
+              value={sheetDate}
+              onChange={(e) => replace({ ...state, date: e.target.value && e.target.value !== todayIso ? e.target.value : undefined })}
+            />
           </Field>
           <Field id="rs-runner" label={t('rs.runner')}>
             <select

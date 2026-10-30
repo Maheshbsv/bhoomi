@@ -10,6 +10,23 @@ export interface RunSheetState {
   /** Empty means both run statuses. */
   status?: OrderStatus;
   runner?: string;
+  /** Printed date, YYYY-MM-DD. It labels the sheet only; it never filters requests. Empty means today. */
+  date?: string;
+}
+
+/** Local calendar date as YYYY-MM-DD. */
+export function isoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Parses YYYY-MM-DD into a local date; undefined for anything else (including 2026-02-31). */
+export function parseIsoDate(raw: string | undefined): Date | undefined {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw ?? '');
+  if (!m) return undefined;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(y, mo - 1, d);
+  return date.getFullYear() === y && date.getMonth() === mo - 1 && date.getDate() === d ? date : undefined;
 }
 
 export function parseRunSheetParams(p: { get(k: string): string | null }): RunSheetState {
@@ -20,6 +37,7 @@ export function parseRunSheetParams(p: { get(k: string): string | null }): RunSh
     talukEn: get('taluk'),
     status: RUN_STATUSES.includes(status as OrderStatus) && STATUSES.includes(status as OrderStatus) ? (status as OrderStatus) : undefined,
     runner: get('runner'),
+    date: parseIsoDate(get('date')) ? get('date') : undefined,
   };
 }
 
@@ -29,6 +47,7 @@ export function toRunSheetSearch(s: RunSheetState): string {
   if (s.talukEn) p.set('taluk', s.talukEn);
   if (s.status) p.set('status', s.status);
   if (s.runner) p.set('runner', s.runner);
+  if (s.date) p.set('date', s.date);
   return p.toString();
 }
 

@@ -98,6 +98,39 @@ describe('seed', () => {
     expect(delivered.some((r) => r.deliveryMode !== 'DIGITAL')).toBe(true);
   });
 
+  it('uses only the demo citizen number and obviously fake numbers', async () => {
+    for (const u of users) {
+      expect(u.phoneNumber === '+919876543210' || /^\+91900000000\d$/.test(u.phoneNumber), u.phoneNumber).toBe(true);
+    }
+  });
+
+  it('gives the advocate a vault worth showing: 4-6 documents over matters, taluks and services', async () => {
+    const adv = users.find((u) => u.role === 'ADVOCATE')!;
+    const mine = await s.listRequests({ userId: adv.id });
+    expect(mine.filter((r) => r.status === 'DELIVERED').length).toBeGreaterThanOrEqual(2);
+    for (const matter of new Set(mine.map((r) => r.matterTag))) {
+      expect(mine.filter((r) => r.matterTag === matter && r.status === 'DELIVERED').length, String(matter)).toBeGreaterThanOrEqual(1);
+    }
+    const docs: { type: string; matter?: string; taluk: string; service: string }[] = [];
+    for (const r of mine.filter((x) => x.status === 'DELIVERED' || x.status === 'RECORD_UNAVAILABLE')) {
+      const d = (await s.getRequest(r.id))!;
+      for (const doc of d.documents.filter((x) => x.fileType === 'FINAL_DELIVERABLE' || x.fileType === 'ENDORSEMENT_CERTIFICATE')) {
+        docs.push({ type: doc.fileType, matter: r.matterTag, taluk: d.location.talukEn, service: r.serviceType });
+      }
+    }
+    expect(docs.length).toBeGreaterThanOrEqual(4);
+    expect(docs.length).toBeLessThanOrEqual(6);
+    expect(new Set(docs.map((x) => x.type))).toEqual(new Set(['FINAL_DELIVERABLE', 'ENDORSEMENT_CERTIFICATE']));
+    expect(new Set(docs.map((x) => x.matter)).size).toBeGreaterThanOrEqual(2);
+    expect(new Set(docs.map((x) => x.taluk)).size).toBeGreaterThanOrEqual(2);
+    expect(new Set(docs.map((x) => x.service)).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps the demo citizen's delivered request", async () => {
+    const delivered = await s.listRequests({ userId: uid, status: 'DELIVERED' });
+    expect(delivered.length).toBeGreaterThanOrEqual(1);
+  });
+
   it('has Kannada-named requests, template messages, inbound replies, notes, advocate matters', async () => {
     const all = await s.listRequests();
     const kn = all.filter((r) => Object.values(r.serviceMetadata).some((v) => typeof v === 'string' && /[ಀ-೿]/.test(v)));
@@ -314,5 +347,46 @@ describe('fallback', () => {
     const e = new StoreError('X', 'msg');
     expect(e).toBeInstanceOf(Error);
     expect(e.code).toBe('X');
+  });
+});
+
+describe('behaviours fixed in the final round', () => {
+  it('an empty userId lists nothing, not everything', async () => {
+    expect((await s.listRequests()).length).toBe(30);
+    expect(await s.listRequests({ userId: '' })).toEqual([]);
+  });
+
+  it('queue search finds the customer account name as well as applicant names', async () => {
+    const [r] = await s.createRequests([inputRtc()], uid);
+    const hit = await s.listRequests({ q: 'ramesh gow' });
+    expect(hit.map((x) => x.id)).toContain(r.id);
+    expect(hit.every((x) => x.userId === uid)).toBe(true);
+    expect(await s.listRequests({ q: 'no such person' })).toEqual([]);
+  });
+
+  it('saving a final during the search walks to QC through the normal transitions, so Deliver is possible', async () => {
+    const { statusesAfterSavingFinal, canDeliver } = await import('@/components/admin/workspaceLogic');
+    const [r] = await s.createRequests([inputRtc()], uid);
+    for (const to of ['UNDER_REVIEW', 'ASSIGNED_TO_RUNNER', 'ARCHIVE_SEARCH_IN_PROGRESS'] as const) {
+      await s.transition(r.id, to, { actorId: op, runnerName: 'Nagaraj (Yelahanka)' });
+    }
+    await s.addDocument(r.id, new Blob(['%PDF-x'], { type: 'application/pdf' }), { fileType: 'FINAL_DELIVERABLE', fileName: 'f.pdf', uploadedById: op });
+    for (const to of statusesAfterSavingFinal('ARCHIVE_SEARCH_IN_PROGRESS')) await s.transition(r.id, to, { actorId: op });
+    const d = (await s.getRequest(r.id))!;
+    expect(d.request.status).toBe('QC_WATERMARK_MERGE');
+    expect(d.timeline.slice(-2).map((t) => [t.fromStatus, t.toStatus])).toEqual([
+      ['ARCHIVE_SEARCH_IN_PROGRESS', 'DOCUMENT_RETRIEVED'],
+      ['DOCUMENT_RETRIEVED', 'QC_WATERMARK_MERGE'],
+    ]);
+    expect(canDeliver({ status: d.request.status, hasFinal: true })).toBe(true);
+    expect((await s.transition(r.id, 'DELIVERED', { actorId: op })).status).toBe('DELIVERED');
+  });
+
+  it('a needs-reply template from a status that cannot reach Action required adds the message but no transition', async () => {
+    const [r] = await s.createRequests([inputRtc()], uid);
+    await s.sendMessage(r.id, { templateKey: 'REQUEST_CLEARER_PHOTO' }, op);
+    const d = (await s.getRequest(r.id))!;
+    expect(d.request.status).toBe('SUBMITTED');
+    expect(d.messages).toHaveLength(1);
   });
 });

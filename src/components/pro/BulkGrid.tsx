@@ -440,7 +440,7 @@ function BulkForm() {
       {show && topErrors.rows && <p role="alert" className="text-sm text-destructive">{topErrors.rows}</p>}
       {show && result.errors.length > 0 && <p role="alert" className="text-sm font-medium text-destructive">{t('fixErrors')}</p>}
       <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={pending}>
-        {pending ? t('submitting') : t('submit', { count })}
+        {pending ? t('submitting') : count > 0 ? t('submit', { count }) : t('submitNone')}
       </Button>
     </form>
   );

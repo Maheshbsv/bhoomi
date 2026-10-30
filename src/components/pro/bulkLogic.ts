@@ -92,7 +92,8 @@ export function rowsToInputs(
   rows.forEach((row, index) => {
     if (isBlank(row)) return;
     const period = parsePeriod(row.period);
-    if (period === undefined) {
+    // Mutation Register and Land Grant take a single year, so a range is the same mistake as a malformed period.
+    if (period === undefined || (period && period.from !== period.to && base.serviceType !== 'OLD_RTC')) {
       errors.push({ row: index, key: YEAR_ERR });
       return;
     }

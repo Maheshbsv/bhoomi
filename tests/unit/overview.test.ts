@@ -86,7 +86,7 @@ describe('summarise', () => {
   });
 });
 
-import { keyNames, parseRunSheetParams, runSheetRows } from '@/components/admin/runSheetData';
+import { isoDate, keyNames, parseIsoDate, parseRunSheetParams, runSheetRows, toRunSheetSearch } from '@/components/admin/runSheetData';
 import type { QueueRow } from '@/components/admin/queueData';
 
 describe('run sheet data', () => {
@@ -106,5 +106,17 @@ describe('run sheet data', () => {
     expect(runSheetRows(rs, {}).map((r) => r.id)).toEqual(['a', 'c']);
     expect(runSheetRows(rs, { runner: 'Sita' }).map((r) => r.id)).toEqual(['c']);
     expect(runSheetRows(rs, { status: 'ASSIGNED_TO_RUNNER' }).map((r) => r.id)).toEqual(['a']);
+  });
+  it('carries a printed date through the URL without touching which rows show', () => {
+    expect(parseRunSheetParams(new URLSearchParams('date=2026-11-02')).date).toBe('2026-11-02');
+    expect(parseRunSheetParams(new URLSearchParams('date=2026-02-31')).date).toBeUndefined();
+    expect(parseRunSheetParams(new URLSearchParams('date=tomorrow')).date).toBeUndefined();
+    expect(toRunSheetSearch({ talukEn: 'Hunsur', date: '2026-11-02' })).toBe('taluk=Hunsur&date=2026-11-02');
+    const mk = (id: string) => ({ id, status: 'ASSIGNED_TO_RUNNER', requestNumber: id, location: { hobliEn: 'h', villageEn: 'v' } }) as unknown as QueueRow;
+    expect(runSheetRows([mk('a')], { date: '2030-01-01' }).map((r) => r.id)).toEqual(['a']);
+  });
+  it('formats local dates', () => {
+    expect(isoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(parseIsoDate('2026-01-05')?.getDate()).toBe(5);
   });
 });

@@ -6,7 +6,7 @@ const base = {
   serviceType: 'OLD_RTC' as const,
   villageId: 1,
   delivery: { mode: 'DIGITAL' as const },
-  phone: '9886001122',
+  phone: '9000000005',
   matterTag: 'Devanahalli 15-Acre Title Verification',
 };
 
@@ -92,5 +92,21 @@ describe('groupMatters', () => {
     const g = groupMatters([r('1', 'A', 'DELIVERED'), r('2', 'A', 'SUBMITTED'), r('3', undefined, 'DELIVERED')]);
     expect(g.find((m) => m.key === 'A')).toMatchObject({ total: 2, delivered: 1 });
     expect(g.find((m) => m.key === NO_MATTER)).toMatchObject({ total: 1, delivered: 1 });
+  });
+});
+
+describe('range period on single-year services', () => {
+  it.each(['OLD_MR', 'LND_FILE'] as const)('%s reports the year message, not a NaN schema error', (serviceType) => {
+    const { inputs, errors } = rowsToInputs([{ surveyNo: '45', period: '1975-1982', notes: 'Rama' }], {
+      ...base,
+      serviceType,
+      natureOfAcquisition: 'SALE',
+    });
+    expect(inputs).toHaveLength(0);
+    expect(errors).toEqual([{ row: 0, key: 'errors.yearRange' }]);
+  });
+  it('a same-year range is a single year; RTC still takes a real range', () => {
+    expect(rowsToInputs([{ surveyNo: '45', period: '1980-1980', notes: 'Rama' }], { ...base, serviceType: 'LND_FILE' }).errors).toEqual([]);
+    expect(rowsToInputs([{ surveyNo: '45', period: '1975-1982' }], base).errors).toEqual([]);
   });
 });

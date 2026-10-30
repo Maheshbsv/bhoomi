@@ -3,6 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Page not found / ಪುಟ ಸಿಗಲಿಲ್ಲ — Hale Dakhale",
+  robots: { index: false, follow: false },
+  icons: { icon: "/bhoomi/icon.svg" },
 };
 
 /* eslint-disable @next/next/no-html-link-for-pages -- the 404 is served outside any locale, so plain links are the right tool */
