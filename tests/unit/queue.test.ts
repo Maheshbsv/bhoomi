@@ -68,6 +68,11 @@ describe('sanitiseLocationFilter', () => {
   it('drops a taluk when there is no district', () => {
     expect(sanitiseLocationFilter({ ...base, talukEn: 'A1' }, locs).talukEn).toBeUndefined();
   });
+  it('drops district and taluk when the location list is empty', () => {
+    const s = sanitiseLocationFilter({ ...base, districtEn: 'A', talukEn: 'A1' }, []);
+    expect(s.districtEn).toBeUndefined();
+    expect(s.talukEn).toBeUndefined();
+  });
   it('keeps a valid pair unchanged', () => {
     const s = { ...base, districtEn: 'A', talukEn: 'A2' };
     expect(sanitiseLocationFilter(s, locs)).toEqual(s);

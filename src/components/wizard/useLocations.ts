@@ -10,9 +10,14 @@ export function useLocations(): Location[] | null {
   const [locs, setLocs] = useState<Location[] | null>(null);
   useEffect(() => {
     let live = true;
-    void store.listLocations().then((l) => {
-      if (live) setLocs(l.filter((x) => x.isActive));
-    });
+    store
+      .listLocations()
+      .then((l) => {
+        if (live) setLocs(l.filter((x) => x.isActive));
+      })
+      .catch(() => {
+        if (live) setLocs([]);
+      });
     return () => {
       live = false;
     };
