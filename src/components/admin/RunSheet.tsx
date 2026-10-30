@@ -220,7 +220,11 @@ function Sheet() {
         </div>
       </form>
 
-      {!chosen ? (
+      {!locations ? (
+        <div role="status" aria-busy="true" aria-label={t('loading')} className="space-y-2 print:hidden">
+          <div className="h-32 animate-pulse rounded-xl bg-muted" />
+        </div>
+      ) : !chosen ? (
         <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground print:hidden">
           {t('rs.pickTaluk')}
         </p>

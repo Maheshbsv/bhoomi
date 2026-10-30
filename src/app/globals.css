@@ -123,11 +123,8 @@
   }
   .run-slip {
     break-inside: avoid;
-    height: 118mm;
-    overflow: hidden;
+    min-height: 118mm;
+    overflow: visible;
     margin-bottom: 3mm;
-  }
-  .run-slip:nth-child(2n) {
-    break-after: page;
   }
 }
