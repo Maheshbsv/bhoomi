@@ -339,6 +339,136 @@
     "prev": "Previous",
     "next": "Next",
     "pagination": "Pages",
-    "closedSla": "Clock stopped"
+    "closedSla": "Clock stopped",
+    "ws": {
+      "back": "Back to queue",
+      "notFoundTitle": "We could not find that request",
+      "notFoundBody": "The link may be old, or the demo data was reset.",
+      "loading": "Loading the request",
+      "loadError": "The request could not be loaded.",
+      "genericError": "Something went wrong. Please try again.",
+      "tabs": {
+        "details": "Details",
+        "actions": "Actions",
+        "chat": "Chat"
+      },
+      "details": {
+        "title": "Request details",
+        "service": "Service",
+        "location": "Location",
+        "customer": "Customer",
+        "phone": "Mobile",
+        "period": "Period",
+        "delivery": "Delivery",
+        "address": "Delivery address",
+        "consignment": "Consignment no.",
+        "runner": "Runner",
+        "notGiven": "Not given",
+        "mode": {
+          "DIGITAL": "Digital",
+          "PHYSICAL": "Physical (Speed Post)",
+          "BOTH": "Digital and physical"
+        }
+      },
+      "gallery": {
+        "title": "Customer uploads",
+        "empty": "The customer did not upload any files.",
+        "open": "Open",
+        "close": "Close",
+        "imageAlt": "Customer upload {name}"
+      },
+      "status": {
+        "title": "Change status",
+        "next": "Next status",
+        "choose": "Choose a status",
+        "note": "Note on the timeline (customers do not see this)",
+        "apply": "Apply",
+        "applying": "Applying...",
+        "closed": "This request is closed. No further status changes.",
+        "confirmTitle": "Confirm status change",
+        "confirmBody": "Move this request to {status}? This closes the request and cannot be undone.",
+        "confirm": "Yes, apply",
+        "cancel": "Cancel",
+        "changed": "Status updated"
+      },
+      "runner": {
+        "label": "Runner name",
+        "placeholder": "Choose or type a name"
+      },
+      "endorsement": {
+        "label": "Endorsement certificate (JPG, PNG or PDF)",
+        "have": "Endorsement certificate already uploaded: {name}",
+        "required": "Choose the endorsement certificate first"
+      },
+      "consignment": {
+        "label": "Speed Post consignment no.",
+        "placeholder": "For example EE123456789IN"
+      },
+      "scan": {
+        "title": "Operator scans",
+        "hint": "Add the scanned pages in the order they should appear. JPG, PNG or PDF, up to 10 MB each.",
+        "choose": "Add scans",
+        "notAllowed": "Scans can be added once the archive search has started.",
+        "locked": "The final PDF is saved, so the scans are locked.",
+        "empty": "No scans yet.",
+        "moveUp": "Move {name} up",
+        "moveDown": "Move {name} down",
+        "drag": "Drag to reorder {name}",
+        "rejected": "{name}: {reason}",
+        "added": "{count, plural, one {# scan added} other {# scans added}}"
+      },
+      "pdf": {
+        "title": "Final document",
+        "generate": "Generate watermarked PDF",
+        "generating": "Building the PDF...",
+        "needScans": "Add at least one scan to generate the PDF.",
+        "wrongStatus": "The PDF can be generated once the archive search has started.",
+        "failed": "The PDF could not be built. One of the files may be damaged or protected. Check the scans and try again.",
+        "tooLarge": "The PDF is 10 MB or more, so it cannot be saved. Use fewer or smaller scans and generate again.",
+        "save": "Save as final",
+        "saving": "Saving...",
+        "footerNote": "The footer on every page is in English only, because the built-in PDF fonts cannot draw Kannada.",
+        "open": "Open PDF",
+        "saved": "Final PDF saved",
+        "previewTitle": "PDF preview",
+        "deliver": "Deliver",
+        "delivering": "Delivering...",
+        "deliverToast": "Would send via WhatsApp + email (demo)",
+        "size": "{size} MB"
+      },
+      "notes": {
+        "title": "Internal notes",
+        "hint": "Only operators see these.",
+        "placeholder": "Write a note",
+        "add": "Add note",
+        "empty": "No notes yet.",
+        "label": "New internal note"
+      },
+      "timeline": {
+        "title": "Timeline",
+        "system": "System"
+      },
+      "thread": {
+        "title": "WhatsApp thread",
+        "empty": "No messages yet.",
+        "needsReply": "needs reply",
+        "info": "info",
+        "templates": "Quick messages",
+        "body": "Message",
+        "bodyPlaceholder": "Type a message to the customer",
+        "send": "Send",
+        "closed": "This request is closed. No more messages can be sent.",
+        "openMedia": "Open attachment",
+        "operator": "Operator",
+        "customer": "Customer",
+        "simulate": "Simulate customer reply (demo)",
+        "simTitle": "Simulate a customer reply",
+        "simHint": "Demo control. In the live service the customer replies on WhatsApp.",
+        "simText": "Reply text",
+        "simFile": "Photo or PDF (optional)",
+        "simSend": "Send as customer",
+        "simEmpty": "Write a reply or attach a file first"
+      }
+    }
   }
 }
