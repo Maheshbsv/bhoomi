@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   basePath: "/bhoomi",
   trailingSlash: true,
   images: { unoptimized: true },
+  experimental: { globalNotFound: true },
   turbopack: {
     rules: {
       "*.css": {
