@@ -95,3 +95,39 @@
     @apply font-sans;
   }
 }
+
+/* Run sheets are carried on paper. App chrome is hidden with Tailwind's print: variant on the
+   header (demo strip included), footer and filters; here we set the page and slip layout. */
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .run-sheet,
+  .run-sheet * {
+    background: transparent !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+  .run-sheet {
+    max-width: none;
+    padding: 0;
+  }
+  .run-slips {
+    display: block;
+  }
+  .run-slip {
+    break-inside: avoid;
+    height: 118mm;
+    overflow: hidden;
+    margin-bottom: 3mm;
+  }
+  .run-slip:nth-child(2n) {
+    break-after: page;
+  }
+}

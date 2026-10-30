@@ -58,7 +58,7 @@ export default async function LocaleLayout({
           <SessionHydrator />
           <StoreProvider>
             <main className="flex-1">{children}</main>
-            <footer className="border-t bg-muted/50">
+            <footer className="border-t bg-muted/50 print:hidden">
               <DemoControls />
             </footer>
           </StoreProvider>

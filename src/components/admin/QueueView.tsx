@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { useStore } from '@/data/provider';
 import { useLocations } from '@/components/wizard/useLocations';
 import { Button } from '@/components/ui/button';
@@ -105,7 +105,17 @@ function Queue() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold">{t('queueTitle')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">{t('queueTitle')}</h1>
+        <nav className="flex gap-2">
+          <Link href="/admin/run-sheet/" className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-muted">
+            {t('runSheetsLink')}
+          </Link>
+          <Link href="/admin/overview/" className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-muted">
+            {t('overviewLink')}
+          </Link>
+        </nav>
+      </div>
 
       <ul aria-label={t('countsLabel')} className="grid grid-cols-3 gap-2">
         {(['green', 'orange', 'red'] as SlaColor[]).map((c) => (

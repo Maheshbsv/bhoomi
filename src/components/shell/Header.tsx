@@ -19,7 +19,7 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const linkCls = 'inline-flex min-h-11 items-center rounded-md px-3 text-sm hover:bg-muted';
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-background print:hidden">
       <DemoStrip />
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 py-1">
         <Link href="/" className="flex min-h-11 flex-col justify-center leading-tight">

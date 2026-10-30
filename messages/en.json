@@ -470,6 +470,53 @@
         "simSend": "Send as customer",
         "simEmpty": "Write a reply or attach a file first"
       }
+    },
+    "runSheetsLink": "Run sheets",
+    "overviewLink": "Overview",
+    "rs": {
+      "title": "Run sheet",
+      "taluk": "Taluk",
+      "district": "District",
+      "pickTaluk": "Choose a district and taluk to see its run sheet.",
+      "status": "Status",
+      "statusBoth": "Assigned and in progress",
+      "runner": "Runner",
+      "allRunners": "All runners",
+      "date": "Date",
+      "count": "{count, plural, one {# request} other {# requests}}",
+      "print": "Print / Save PDF",
+      "empty": "No requests to carry for this taluk with these filters.",
+      "error": "The run sheet could not be loaded.",
+      "demoLine": "Demo — sample data",
+      "reqNo": "Request no.",
+      "found": "Found",
+      "notFoundBox": "Not found",
+      "volume": "Volume no.",
+      "page": "Page",
+      "sign": "Runner sign",
+      "survey": "Survey / Hissa",
+      "period": "Period",
+      "names": "Names",
+      "place": "Village / Hobli",
+      "filters": "Run sheet filters",
+      "sheet": "Run sheet slips"
+    },
+    "ov": {
+      "title": "SLA overview",
+      "tiles": "Open requests by SLA colour",
+      "byStatus": "Requests by status",
+      "status": "Status",
+      "total": "Requests",
+      "byTaluk": "Open requests by taluk",
+      "district": "District",
+      "taluk": "Taluk",
+      "open": "Open",
+      "red": "Over 96h",
+      "avgDays": "Average days to deliver",
+      "unavailableRate": "Record unavailable rate",
+      "unavailableNote": "Share of closed requests that ended as record unavailable",
+      "error": "The overview could not be loaded.",
+      "noRequests": "No requests yet."
     }
   }
 }
