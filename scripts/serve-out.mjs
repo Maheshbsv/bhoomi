@@ -49,9 +49,9 @@ async function resolveFile(pathname) {
   // Next exports prefetch payloads as flat names (__next.$d$locale.__PAGE__.txt). When the build runs
   // on Windows it writes them as __next.$d$locale/__PAGE__.txt instead (a backslash in the segment
   // path is never replaced by the dot). Linux, i.e. GitHub Actions, produces the flat names, so this
-  // fallback only matters for local builds.
+  // fallback is Windows-only; on Linux a missing payload stays a 404 and fails the e2e check.
   const name = basename(target);
-  if (name.startsWith("__next.") && name.endsWith(".txt")) {
+  if (process.platform === "win32" && name.startsWith("__next.") && name.endsWith(".txt")) {
     const [first, ...rest] = name.slice("__next.".length, -".txt".length).split(".");
     if (rest.length > 0) {
       const alt = join(dirname(target), `__next.${first}`, ...rest) + ".txt";
